@@ -318,18 +318,6 @@ export const AptitudeView: React.FC<AptitudeViewProps> = ({
               >
                 Aptitude
               </button>
-              <button
-                onClick={onNavigateDesignSystem}
-                style={{
-                  padding: '0.38rem 0.75rem',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'rgb(var(--sketch))',
-                }}
-              >
-                Design System
-              </button>
             </nav>
           </div>
 

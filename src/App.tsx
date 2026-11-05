@@ -643,44 +643,48 @@ export const App: React.FC = () => {
             <span style={{ fontWeight: 600, color: 'rgb(var(--ink))' }}>{currentGroupTitle}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => navigateToPath(track === 'dsa' ? '/system-design' : '/dsa')}
-              className="ui-chip"
-              style={{ padding: '0.22rem 0.55rem' }}
+              className="nav-link"
+              style={{ padding: '0.25rem 0.6rem', fontSize: '12px' }}
             >
-              {track === 'dsa' ? '→ /system-design' : '→ /dsa'}
+              {track === 'dsa' ? (
+                <>
+                  <Cpu size={13} style={{ color: 'rgb(var(--accent2))' }} />
+                  <span>System Design</span>
+                </>
+              ) : (
+                <>
+                  <Code2 size={13} style={{ color: 'rgb(var(--accent))' }} />
+                  <span>DSA Stages</span>
+                </>
+              )}
             </button>
 
             <button
               type="button"
               onClick={() => navigateToPath('/aptitude')}
-              className="ui-chip"
-              style={{ padding: '0.22rem 0.55rem' }}
+              className="nav-link"
+              style={{ padding: '0.25rem 0.6rem', fontSize: '12px' }}
             >
-              /aptitude
+              <Sparkles size={13} style={{ color: 'rgb(var(--accent))' }} />
+              <span>Aptitude</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigateToPath('/design-system')}
-              className="ui-chip"
-              style={{ padding: '0.22rem 0.55rem' }}
-            >
-              /design-system
-            </button>
+            <div style={{ width: '1px', height: '16px', background: 'rgb(var(--ink) / 0.1)', margin: '0 2px' }} />
 
             <button
               type="button"
               onClick={toggleHideSolutions}
+              className="nav-link"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
+                padding: '0.25rem 0.55rem',
                 fontSize: '12px',
                 color: hideSolutions ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
               }}
+              title={hideSolutions ? 'Show solutions' : 'Hide solutions for practice'}
             >
               {hideSolutions ? <EyeOff size={13} /> : <Eye size={13} />}
               <span>{hideSolutions ? 'Solutions hidden' : 'Hide solutions'}</span>
@@ -689,33 +693,33 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="ui-chip"
-              style={{ padding: '0.22rem 0.55rem' }}
+              className="nav-search-btn"
+              style={{ minWidth: 'auto', padding: '0.25rem 0.55rem', fontSize: '11.5px' }}
             >
-              <Search size={11} /> ⌘K
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Search size={12} />
+                <span>Search</span>
+              </div>
+              <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgb(var(--mute))' }}>⌘K</kbd>
             </button>
 
             <button
               type="button"
               onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-              style={{ color: 'rgb(var(--mute))', padding: '4px' }}
+              className="nav-icon-btn"
+              style={{ width: '28px', height: '28px' }}
               title="Toggle theme"
             >
-              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+              {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
             </button>
 
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
-                color: 'rgb(var(--mute))',
-              }}
+            <div
+              className="status-pill"
+              style={{ padding: '0.2rem 0.55rem', fontSize: '11px' }}
+              title={`${solvedIds.size} challenges solved`}
             >
-              <Flame size={13} style={{ color: 'rgb(var(--accent))' }} /> {solvedIds.size}
-            </span>
+              <Flame size={12} style={{ color: 'rgb(var(--accent))' }} /> {solvedIds.size}
+            </div>
           </div>
         </header>
 

@@ -124,16 +124,17 @@ button {
   padding: 0.65rem 1.3rem;
   font-weight: 600;
   font-size: 0.9rem;
-  border-radius: 0 0.625rem 0 0.625rem;
+  border-radius: 8px;
   background: rgb(var(--ink));
   color: rgb(var(--paper));
-  box-shadow: 0 4px 12px rgb(var(--ink) / 0.18);
-  transition: transform 150ms ease, opacity 150ms ease;
+  box-shadow: 0 2px 8px rgb(var(--ink) / 0.12);
+  transition: transform 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
 }
 
 .cc-btn-solid:hover {
   transform: translateY(-1px);
-  opacity: 0.93;
+  opacity: 0.95;
+  box-shadow: 0 4px 14px rgb(var(--ink) / 0.2);
 }
 
 .cc-btn-outline {
@@ -144,16 +145,121 @@ button {
   padding: 0.65rem 1.25rem;
   font-weight: 600;
   font-size: 0.9rem;
-  border-radius: 0 0.625rem 0 0.625rem;
-  border: 1.5px solid rgb(var(--ink) / 0.22);
+  border-radius: 8px;
+  border: 1.5px solid rgb(var(--ink) / 0.18);
   background: rgb(var(--surface));
   color: rgb(var(--ink));
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition: all 150ms ease;
 }
 
 .cc-btn-outline:hover {
   border-color: rgb(var(--accent));
   background: rgb(var(--accent) / 0.06);
+  transform: translateY(-1px);
+}
+
+/* Polished Navigation Styles */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.72rem;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+  color: rgb(var(--sketch));
+  transition: all 140ms ease;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: rgb(var(--ink));
+  background: rgb(var(--ink) / 0.05);
+}
+
+:root[data-theme='dark'] .nav-link:hover {
+  background: rgb(var(--ink) / 0.08);
+}
+
+.nav-link.active {
+  color: rgb(var(--accent));
+  background: rgb(var(--accent) / 0.1);
+  border-color: rgb(var(--accent) / 0.25);
+}
+
+.nav-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.36rem 0.75rem;
+  font-size: 12.5px;
+  color: rgb(var(--mute));
+  background: rgb(var(--surface-alt));
+  border: 1px solid rgb(var(--ink) / 0.12);
+  border-radius: 7px;
+  transition: all 140ms ease;
+  min-width: 185px;
+  cursor: pointer;
+}
+
+.nav-search-btn:hover {
+  color: rgb(var(--ink));
+  background: rgb(var(--surface));
+  border-color: rgb(var(--ink) / 0.28);
+  box-shadow: 0 1px 4px rgb(var(--ink) / 0.04);
+}
+
+.nav-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: rgb(var(--sketch));
+  background: transparent;
+  border: 1px solid rgb(var(--ink) / 0.12);
+  transition: all 140ms ease;
+  cursor: pointer;
+}
+
+.nav-icon-btn:hover {
+  color: rgb(var(--ink));
+  background: rgb(var(--ink) / 0.06);
+  border-color: rgb(var(--ink) / 0.25);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid rgb(var(--gold-stroke) / 0.45);
+  background: rgb(var(--gold-bg));
+  color: rgb(var(--ink));
+}
+
+.curriculum-card {
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.curriculum-card:hover {
+  border-color: rgb(var(--ink) / 0.24);
+  box-shadow: 0 4px 16px rgb(var(--ink) / 0.05);
+}
+
+:root[data-theme='dark'] .curriculum-card:hover {
+  border-color: rgb(var(--accent) / 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Custom Scrubber Range Input */
