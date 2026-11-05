@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  BookOpen,
-  CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
   Code2,
   Cpu,
   Eye,
@@ -13,8 +13,8 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Play,
   Search,
+  Sparkles,
   Sun,
 } from 'lucide-react';
 import { DSA_PATTERNS, DSA_PROBLEMS } from './data/dsaProblems';
@@ -30,10 +30,10 @@ import { MarkdownRenderer } from './components/stage/MarkdownRenderer';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('dpc:theme') as 'light' | 'dark') || 'light';
+    return (localStorage.getItem('dpc:theme') as 'light' | 'dark') || 'dark';
   });
   const [viewMode, setViewMode] = useState<'landing' | 'workspace'>('landing');
-  const [track, setTrack] = useState<TrackKind>('dsa');
+  const [track, setTrack] = useState<TrackKind>('system-design');
   const [selectedDsaId, setSelectedDsaId] = useState<string>(DSA_PROBLEMS[0].id);
   const [selectedSdId, setSelectedSdId] = useState<string>(SYSTEM_DESIGN_LESSONS[0].id);
 
@@ -45,6 +45,7 @@ export const App: React.FC = () => {
   const [sdMode, setSdMode] = useState<'watch' | 'read'>('watch');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [hideSolutions, setHideSolutions] = useState<boolean>(() => {
     return localStorage.getItem('dpc:hideSolutions') === '1';
   });
@@ -57,7 +58,6 @@ export const App: React.FC = () => {
     }
   });
 
-  // Sync theme attribute on <html>
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('dpc:theme', theme);
@@ -80,6 +80,10 @@ export const App: React.FC = () => {
     });
   };
 
+  const toggleSidebarGroup = (groupId: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
   // Current active item
   const currentDsa = useMemo(
     () => DSA_PROBLEMS.find((p) => p.id === selectedDsaId) ?? DSA_PROBLEMS[0],
@@ -96,7 +100,6 @@ export const App: React.FC = () => {
   const totalSteps = currentApproach.steps.length;
   const safeStepIdx = Math.min(stepIdx, Math.max(0, totalSteps - 1));
 
-  // Reset approach & step when switching items
   const selectItem = (targetTrack: TrackKind, id: string) => {
     setTrack(targetTrack);
     if (targetTrack === 'dsa') {
@@ -179,11 +182,20 @@ export const App: React.FC = () => {
 
   const activeItemId = track === 'dsa' ? currentDsa.id : currentSd.id;
   const activeTitle = track === 'dsa' ? currentDsa.title : currentSd.title;
-  const activeSubtitle = (track === 'dsa' ? currentDsa.subtitle : currentSd.subtitle) ?? '';
   const activeStatement = track === 'dsa' ? currentDsa.statement : currentSd.statement;
   const activeCompanies = (track === 'dsa' ? currentDsa.companies : currentSd.companies) ?? [];
   const activeDifficulty =
     (track === 'dsa' ? currentDsa.leetcode?.difficulty ?? currentDsa.difficulty : currentSd.difficulty) ?? 'Medium';
+  const activeKindLabel =
+    track === 'dsa'
+      ? `${currentDsa.kind === 'concept' ? 'Concept' : 'Problem'} · ${activeDifficulty}`
+      : `${currentSd.kind === 'concept' ? 'Concept' : currentSd.kind === 'pattern' ? 'Pattern' : 'Case Study'} · ${activeDifficulty}`;
+
+  const currentGroupTitle =
+    track === 'dsa'
+      ? DSA_PATTERNS.find((p) => p.id === currentDsa.patternId)?.title ?? 'DSA Visual'
+      : SYSTEM_DESIGN_MODULES.find((m) => m.id === (currentSd.moduleId ?? currentSd.patternId))?.title ?? 'LLD Visual';
+
   const defaultRubric = {
     prompt: `Write the core pseudocode or design contract for "${activeTitle}".`,
     starterHint: '// Write your logic here...',
@@ -206,7 +218,6 @@ export const App: React.FC = () => {
       ? `${currentDsa.approaches[safeApproachIdx].complexity.time} · ${currentDsa.approaches[safeApproachIdx].complexity.space}`
       : currentSd.approaches[safeApproachIdx].badge;
 
-  // Flat list of items in current track for Prev / Next Problem navigation
   const flatTrackList = track === 'dsa' ? DSA_PROBLEMS : SYSTEM_DESIGN_LESSONS;
   const currentItemIndex = flatTrackList.findIndex((i) => i.id === activeItemId);
 
@@ -214,11 +225,10 @@ export const App: React.FC = () => {
     <div className="app-shell">
       {/* LEFT CURRICULUM SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? '' : 'collapsed'}`}>
-        {/* Brand Header */}
+        {/* Top Brand Row */}
         <div
           style={{
-            padding: '0.85rem 1rem',
-            borderBottom: '1px solid rgb(var(--ink) / 0.1)',
+            padding: '0.75rem 0.9rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -227,198 +237,232 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setViewMode('landing')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', textAlign: 'left' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left' }}
           >
-            <div
+            <span
               style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                background: 'rgb(var(--accent))',
-                color: 'rgb(var(--paper))',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-hand)',
                 fontWeight: 800,
-                fontSize: '12px',
+                fontSize: '14.5px',
+                color: 'rgb(var(--accent))',
               }}
             >
-              !P
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '13.5px' }}>Don&apos;t Paper Code</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgb(var(--mute))' }}>
-                ← Home Studio
-              </div>
-            </div>
+              Don&apos;t Paper
+            </span>
+            <span style={{ fontFamily: 'var(--font-hand)', fontWeight: 700, fontSize: '14.5px' }}>
+              Visual
+            </span>
           </button>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
             title="Collapse sidebar"
-            className="ui-chip"
+            style={{ color: 'rgb(var(--mute))', padding: '4px' }}
           >
-            <PanelLeftClose size={13} />
+            <PanelLeftClose size={15} />
           </button>
         </div>
 
-        {/* Track Switcher Tabs (DSA vs System Design) */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '0.35rem',
-            padding: '0.65rem 0.75rem',
-            borderBottom: '1px solid rgb(var(--ink) / 0.1)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => selectItem('dsa', selectedDsaId)}
+        {/* Track Switcher Box (Matches "Track: LLD Visual" selector in screenshot) */}
+        <div style={{ padding: '0 0.75rem 0.75rem', borderBottom: '1px solid rgb(var(--ink) / 0.08)' }}>
+          <div
             className="sketch-border-soft"
             style={{
-              padding: '0.42rem 0.5rem',
-              fontSize: '12px',
-              fontWeight: 700,
+              padding: '0.45rem 0.65rem',
+              background: 'rgb(var(--paper))',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.35rem',
-              background: track === 'dsa' ? 'rgb(var(--accent) / 0.14)' : 'transparent',
-              borderColor: track === 'dsa' ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.12)',
-              color: track === 'dsa' ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
             }}
           >
-            <Code2 size={13} /> DSA
-          </button>
-          <button
-            type="button"
-            onClick={() => selectItem('system-design', selectedSdId)}
-            className="sketch-border-soft"
-            style={{
-              padding: '0.42rem 0.5rem',
-              fontSize: '12px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.35rem',
-              background: track === 'system-design' ? 'rgb(var(--accent2) / 0.15)' : 'transparent',
-              borderColor: track === 'system-design' ? 'rgb(var(--accent2))' : 'rgb(var(--ink) / 0.12)',
-              color: track === 'system-design' ? 'rgb(var(--accent2))' : 'rgb(var(--mute))',
-            }}
-          >
-            <Cpu size={13} /> SysDesign
-          </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              {track === 'dsa' ? (
+                <Code2 size={15} style={{ color: 'rgb(var(--accent))' }} />
+              ) : (
+                <Cpu size={15} style={{ color: 'rgb(var(--accent))' }} />
+              )}
+              <div>
+                <div style={{ fontSize: '9.5px', color: 'rgb(var(--mute))', textTransform: 'uppercase' }}>
+                  Track
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700 }}>
+                  {track === 'dsa' ? 'DSA Visual' : 'LLD & HLD Visual'}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                type="button"
+                onClick={() => selectItem('dsa', selectedDsaId)}
+                className="ui-chip"
+                style={{
+                  padding: '2px 7px',
+                  fontSize: '10px',
+                  borderColor: track === 'dsa' ? 'rgb(var(--accent))' : 'transparent',
+                  color: track === 'dsa' ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
+                }}
+              >
+                DSA
+              </button>
+              <button
+                type="button"
+                onClick={() => selectItem('system-design', selectedSdId)}
+                className="ui-chip"
+                style={{
+                  padding: '2px 7px',
+                  fontSize: '10px',
+                  borderColor: track === 'system-design' ? 'rgb(var(--accent))' : 'transparent',
+                  color: track === 'system-design' ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
+                }}
+              >
+                LLD
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Curriculum Tree */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem' }}>
+        {/* Collapsible Section Tree */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0.65rem 0.6rem' }}>
           {track === 'dsa'
             ? DSA_PATTERNS.map((pat) => {
                 const items = DSA_PROBLEMS.filter((p) => p.patternId === pat.id);
+                const isCollapsed = Boolean(collapsedGroups[pat.id]);
                 return (
-                  <div key={pat.id} style={{ marginBottom: '1rem' }}>
-                    <div
+                  <div key={pat.id} style={{ marginBottom: '0.85rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSidebarGroup(pat.id)}
                       style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
                         fontFamily: 'var(--font-mono)',
                         fontSize: '10px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
-                        letterSpacing: '0.07em',
+                        letterSpacing: '0.08em',
                         color: 'rgb(var(--mute))',
-                        marginBottom: '0.35rem',
+                        padding: '0.25rem 0.35rem',
+                        marginBottom: '0.2rem',
                       }}
                     >
-                      {pat.number} · {pat.title}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      {items.map((item) => {
-                        const active = item.id === currentDsa.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => selectItem('dsa', item.id)}
-                            style={{
-                              width: '100%',
-                              textAlign: 'left',
-                              padding: '0.48rem 0.6rem',
-                              borderRadius: '7px',
-                              fontSize: '12.5px',
-                              fontWeight: active ? 700 : 500,
-                              background: active ? 'rgb(var(--accent) / 0.12)' : 'transparent',
-                              color: active ? 'rgb(var(--accent))' : 'rgb(var(--ink))',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '0.4rem',
-                            }}
-                          >
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.title}
-                            </span>
-                            {solvedIds.has(item.id) && (
-                              <CheckCircle2 size={13} style={{ color: 'rgb(var(--done-stroke))', flexShrink: 0 }} />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                      <ChevronDown
+                        size={11}
+                        style={{
+                          transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                          transition: 'transform 160ms ease',
+                        }}
+                      />
+                      <span>{pat.title}</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {items.map((item) => {
+                          const active = item.id === currentDsa.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => selectItem('dsa', item.id)}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '0.42rem 0.65rem',
+                                borderRadius: '6px',
+                                fontSize: '12.5px',
+                                fontWeight: active ? 600 : 400,
+                                background: active ? 'rgb(var(--ink) / 0.08)' : 'transparent',
+                                color: active ? 'rgb(var(--ink))' : 'rgb(var(--mute))',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '0.4rem',
+                              }}
+                            >
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.title}
+                              </span>
+                              {solvedIds.has(item.id) && (
+                                <CheckCircle2 size={12} style={{ color: 'rgb(var(--done-stroke))', flexShrink: 0 }} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })
             : SYSTEM_DESIGN_MODULES.map((mod) => {
-                const items = SYSTEM_DESIGN_LESSONS.filter((l) => l.moduleId === mod.id);
+                const items = SYSTEM_DESIGN_LESSONS.filter((l) => (l.moduleId ?? l.patternId) === mod.id);
+                const isCollapsed = Boolean(collapsedGroups[mod.id]);
                 return (
-                  <div key={mod.id} style={{ marginBottom: '1rem' }}>
-                    <div
+                  <div key={mod.id} style={{ marginBottom: '0.85rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSidebarGroup(mod.id)}
                       style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
                         fontFamily: 'var(--font-mono)',
                         fontSize: '10px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
-                        letterSpacing: '0.07em',
+                        letterSpacing: '0.08em',
                         color: 'rgb(var(--mute))',
-                        marginBottom: '0.35rem',
+                        padding: '0.25rem 0.35rem',
+                        marginBottom: '0.2rem',
                       }}
                     >
-                      {mod.number} · {mod.title}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      {items.map((item) => {
-                        const active = item.id === currentSd.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => selectItem('system-design', item.id)}
-                            style={{
-                              width: '100%',
-                              textAlign: 'left',
-                              padding: '0.48rem 0.6rem',
-                              borderRadius: '7px',
-                              fontSize: '12.5px',
-                              fontWeight: active ? 700 : 500,
-                              background: active ? 'rgb(var(--accent2) / 0.14)' : 'transparent',
-                              color: active ? 'rgb(var(--accent2))' : 'rgb(var(--ink))',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '0.4rem',
-                            }}
-                          >
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.title}
-                            </span>
-                            {solvedIds.has(item.id) && (
-                              <CheckCircle2 size={13} style={{ color: 'rgb(var(--done-stroke))', flexShrink: 0 }} />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                      <ChevronDown
+                        size={11}
+                        style={{
+                          transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                          transition: 'transform 160ms ease',
+                        }}
+                      />
+                      <span>{mod.title}</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {items.map((item) => {
+                          const active = item.id === currentSd.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => selectItem('system-design', item.id)}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '0.42rem 0.65rem',
+                                borderRadius: '6px',
+                                fontSize: '12.5px',
+                                fontWeight: active ? 600 : 400,
+                                background: active ? 'rgb(var(--ink) / 0.08)' : 'transparent',
+                                color: active ? 'rgb(var(--ink))' : 'rgb(var(--mute))',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '0.4rem',
+                              }}
+                            >
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.title}
+                              </span>
+                              {solvedIds.has(item.id) && (
+                                <CheckCircle2 size={12} style={{ color: 'rgb(var(--done-stroke))', flexShrink: 0 }} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -427,20 +471,19 @@ export const App: React.FC = () => {
 
       {/* RIGHT MAIN STAGE */}
       <div className="stage-main">
-        {/* Top Stage Bar */}
+        {/* Top Breadcrumb Bar (Matches "LLD Visual › Getting started" + right utility bar) */}
         <header
           style={{
-            padding: '0.7rem 1.25rem',
-            borderBottom: '1px solid rgb(var(--ink) / 0.1)',
-            background: 'rgb(var(--surface))',
+            padding: '0.55rem 1.5rem',
+            borderBottom: '1px solid rgb(var(--ink) / 0.08)',
+            background: 'rgb(var(--paper))',
             display: 'flex',
-            flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '0.75rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '12.5px' }}>
             {!sidebarOpen && (
               <button
                 type="button"
@@ -448,219 +491,290 @@ export const App: React.FC = () => {
                 className="ui-chip"
                 title="Open sidebar"
               >
-                <PanelLeftOpen size={14} />
+                <PanelLeftOpen size={13} />
               </button>
             )}
             <button
               type="button"
               onClick={() => setViewMode('landing')}
-              className="ui-chip"
+              style={{ color: 'rgb(var(--mute))', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               title="Back to Home"
             >
-              <Home size={12} /> Home
+              <Home size={13} />
             </button>
-            <span
-              className="ui-chip"
-              style={{
-                borderColor: track === 'dsa' ? 'rgb(var(--accent) / 0.5)' : 'rgb(var(--accent2) / 0.5)',
-                color: track === 'dsa' ? 'rgb(var(--accent))' : 'rgb(var(--accent2))',
-                fontWeight: 700,
-              }}
-            >
-              {track === 'dsa' ? 'DSA STAGE' : `SYSTEM DESIGN · ${currentSd.kind.toUpperCase()}`}
+            <span style={{ color: 'rgb(var(--mute))' }}>
+              {track === 'dsa' ? 'DSA Visual' : 'LLD Visual'}
             </span>
-            <span className="ui-chip">{activeDifficulty}</span>
+            <span style={{ color: 'rgb(var(--mute) / 0.5)' }}>›</span>
+            <span style={{ fontWeight: 600, color: 'rgb(var(--ink))' }}>{currentGroupTitle}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {/* System Design Watch vs Read Toggle */}
-            {track === 'system-design' && (
-              <div
-                className="sketch-border-soft"
-                style={{ display: 'inline-flex', padding: '2px', background: 'rgb(var(--paper))' }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setSdMode('watch')}
-                  style={{
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '6px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    background: sdMode === 'watch' ? 'rgb(var(--accent))' : 'transparent',
-                    color: sdMode === 'watch' ? 'rgb(var(--paper))' : 'rgb(var(--mute))',
-                  }}
-                >
-                  <Play size={11} /> Watch Diagram
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSdMode('read')}
-                  style={{
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '6px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    background: sdMode === 'read' ? 'rgb(var(--accent))' : 'transparent',
-                    color: sdMode === 'read' ? 'rgb(var(--paper))' : 'rgb(var(--mute))',
-                  }}
-                >
-                  <BookOpen size={11} /> Read Notes
-                </button>
-              </div>
-            )}
-
-            {/* Hide Solutions Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <button
               type="button"
               onClick={toggleHideSolutions}
-              className="ui-chip"
               style={{
-                padding: '0.3rem 0.65rem',
-                borderColor: hideSolutions ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.15)',
-                background: hideSolutions ? 'rgb(var(--accent) / 0.12)' : 'rgb(var(--paper))',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '12px',
                 color: hideSolutions ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
-                fontWeight: 600,
               }}
             >
-              {hideSolutions ? <EyeOff size={12} /> : <Eye size={12} />}
-              {hideSolutions ? 'Solutions Hidden' : 'Hide Solutions'}
+              {hideSolutions ? <EyeOff size={13} /> : <Eye size={13} />}
+              <span>{hideSolutions ? 'Solutions hidden' : 'Hide solutions'}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
               className="ui-chip"
-              style={{ padding: '0.3rem 0.65rem' }}
+              style={{ padding: '0.22rem 0.55rem' }}
             >
-              <Search size={12} /> ⌘K
+              <Search size={11} /> ⌘K
             </button>
-
-            <span className="ui-chip" style={{ background: 'rgb(var(--gold-bg))', fontWeight: 700 }}>
-              <Flame size={12} style={{ color: 'rgb(var(--accent))' }} /> {solvedIds.size}
-            </span>
 
             <button
               type="button"
               onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-              className="ui-chip"
-              style={{ padding: '0.3rem 0.5rem' }}
+              style={{ color: 'rgb(var(--mute))', padding: '4px' }}
+              title="Toggle theme"
             >
-              {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
+              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
             </button>
+
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                color: 'rgb(var(--mute))',
+              }}
+            >
+              <Flame size={13} style={{ color: 'rgb(var(--accent))' }} /> {solvedIds.size}
+            </span>
           </div>
         </header>
 
         {/* Stage Content Container */}
-        <div style={{ padding: '1.25rem', maxWidth: '1400px', width: '100%', margin: '0 auto', flex: 1 }}>
-          {/* Title & Problem Statement Banner */}
-          <div style={{ marginBottom: '1rem' }}>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: '0.75rem',
-              }}
-            >
-              <div>
-                <h1 style={{ fontFamily: 'var(--font-hand)', fontSize: '1.55rem', fontWeight: 800 }}>
-                  {activeTitle}
-                </h1>
-                <p style={{ fontSize: '13.5px', color: 'rgb(var(--mute))', marginTop: '2px' }}>
-                  {activeSubtitle}
-                </p>
+        <div style={{ padding: '1.35rem 1.75rem', maxWidth: '1380px', width: '100%', margin: '0 auto', flex: 1 }}>
+          {/* Header Section (Matches screenshot: Category tag, Title, Description, ASKED AT, Approach row on left; step 1/13 + Watch/Read pill on right) */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              marginBottom: '1.1rem',
+            }}
+          >
+            <div style={{ maxWidth: '780px' }}>
+              <div
+                style={{
+                  fontSize: '11.5px',
+                  color: 'rgb(var(--mute))',
+                  marginBottom: '0.2rem',
+                  fontWeight: 500,
+                }}
+              >
+                {activeKindLabel}
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                {activeCompanies.map((c) => (
-                  <span key={c} className="ui-chip">
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
 
-            <div
-              className="sketch-border-soft"
-              style={{
-                marginTop: '0.75rem',
-                padding: '0.7rem 0.95rem',
-                background: 'rgb(var(--surface))',
-                fontSize: '13px',
-                lineHeight: 1.6,
-                color: 'rgb(var(--sketch))',
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '0.75rem',
-              }}
-            >
-              <span>{activeStatement}</span>
-              {track === 'dsa' && (
-                <span
-                  className="ui-chip"
-                  style={{
-                    borderColor: 'rgb(var(--accent) / 0.35)',
-                    background: 'rgb(var(--paper))',
-                    fontWeight: 600,
-                  }}
-                >
-                  {currentDsa.inputDisplay}
-                </span>
-              )}
-            </div>
-          </div>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-hand)',
+                  fontSize: '1.75rem',
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.15,
+                }}
+              >
+                {activeTitle}
+              </h1>
 
-          {/* Approach Selector Tabs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-            {approaches.map((app, idx) => {
-              const isSelected = idx === safeApproachIdx;
-              const badgeText =
-                'complexity' in app ? `${app.complexity.time} · ${app.complexity.space}` : app.badge;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setApproachIdx(idx);
-                    setStepIdx(0);
-                    setPlaying(false);
-                  }}
-                  className="sketch-border-soft"
+              <p
+                style={{
+                  fontSize: '13.5px',
+                  color: 'rgb(var(--mute))',
+                  lineHeight: 1.55,
+                  marginTop: '0.35rem',
+                }}
+              >
+                {activeStatement}
+              </p>
+
+              {/* ASKED AT Row */}
+              {activeCompanies.length > 0 && (
+                <div
                   style={{
-                    padding: '0.48rem 0.9rem',
-                    background: isSelected ? 'rgb(var(--active-bg))' : 'rgb(var(--surface))',
-                    borderColor: isSelected ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.14)',
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: '0.55rem',
-                    fontSize: '12.5px',
-                    fontWeight: isSelected ? 700 : 500,
+                    flexWrap: 'wrap',
+                    gap: '0.4rem',
+                    marginTop: '0.65rem',
                   }}
                 >
-                  <span>{app.label}</span>
-                  {badgeText && (
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      letterSpacing: '0.08em',
+                      color: 'rgb(var(--mute))',
+                      marginRight: '0.2rem',
+                    }}
+                  >
+                    ASKED AT
+                  </span>
+                  {activeCompanies.map((c) => (
                     <span
-                      className="ui-chip"
+                      key={c}
                       style={{
-                        borderColor: isSelected ? 'rgb(var(--accent) / 0.5)' : 'rgb(var(--ink) / 0.12)',
-                        color: isSelected ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '4px',
+                        border: '1px solid rgb(var(--ink) / 0.14)',
+                        color: 'rgb(var(--sketch))',
                       }}
                     >
-                      {badgeText}
+                      {c}
                     </span>
-                  )}
-                </button>
-              );
-            })}
+                  ))}
+                </div>
+              )}
+
+              {/* Approach Switcher + Step Dots Row (`1/2 The class diagram, structure ● • • • •`) */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.65rem',
+                  marginTop: '0.75rem',
+                }}
+              >
+                {approaches.map((app, idx) => {
+                  const isSelected = idx === safeApproachIdx;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setApproachIdx(idx);
+                        setStepIdx(0);
+                        setPlaying(false);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        fontSize: '12.5px',
+                        fontWeight: isSelected ? 700 : 500,
+                        color: isSelected ? 'rgb(var(--ink))' : 'rgb(var(--mute))',
+                        padding: approaches.length > 1 ? '0.25rem 0.6rem' : '0',
+                        borderRadius: '6px',
+                        background:
+                          approaches.length > 1 && isSelected ? 'rgb(var(--ink) / 0.08)' : 'transparent',
+                      }}
+                    >
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11.5px', color: 'rgb(var(--mute))' }}>
+                        {idx + 1}/{approaches.length}
+                      </span>
+                      <span>{app.label}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Mini Step Dots */}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '0.25rem' }}>
+                  {Array.from({ length: Math.min(totalSteps, 18) }).map((_, dotIdx) => {
+                    const isCurrent = dotIdx === safeStepIdx;
+                    return (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        onClick={() => {
+                          setPlaying(false);
+                          setStepIdx(dotIdx);
+                        }}
+                        style={{
+                          width: isCurrent ? '7px' : '5px',
+                          height: isCurrent ? '7px' : '5px',
+                          borderRadius: '999px',
+                          background: isCurrent ? 'rgb(var(--ink))' : 'rgb(var(--ink) / 0.22)',
+                          transition: 'all 160ms ease',
+                        }}
+                        title={`Step ${dotIdx + 1}`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Top-Right Step Pill + Watch/Read Segmented Pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <div
+                className="sketch-border-soft"
+                style={{
+                  padding: '0.28rem 0.65rem',
+                  background: 'rgb(var(--surface))',
+                  textAlign: 'center',
+                  lineHeight: 1.15,
+                }}
+              >
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', color: 'rgb(var(--mute))' }}>
+                  step
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700 }}>
+                  {safeStepIdx + 1}/{totalSteps}
+                </div>
+              </div>
+
+              {track === 'system-design' && (
+                <div
+                  className="sketch-border-soft"
+                  style={{
+                    display: 'inline-flex',
+                    padding: '3px',
+                    background: 'rgb(var(--surface))',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSdMode('watch')}
+                    style={{
+                      padding: '0.32rem 0.75rem',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: sdMode === 'watch' ? 'rgb(var(--ink))' : 'transparent',
+                      color: sdMode === 'watch' ? 'rgb(var(--paper))' : 'rgb(var(--mute))',
+                    }}
+                  >
+                    Watch
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSdMode('read')}
+                    style={{
+                      padding: '0.32rem 0.75rem',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: sdMode === 'read' ? 'rgb(var(--ink))' : 'transparent',
+                      color: sdMode === 'read' ? 'rgb(var(--paper))' : 'rgb(var(--mute))',
+                    }}
+                  >
+                    Read
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Read Mode (Markdown Architecture Theory) vs Watch Mode (Interactive Stage) */}
@@ -688,19 +802,17 @@ export const App: React.FC = () => {
               <MarkdownRenderer markdown={currentSd.theory ?? currentSd.theoryMarkdown ?? ''} />
             </div>
           ) : (
-            <div className="stage-split">
-              {/* LEFT COLUMN: Interactive Canvas + Narration + Scrubber */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', minWidth: 0 }}>
-                {/* Main Visual Canvas */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+              {/* CENTER SPLIT: Diagram Canvas on Left + Code & STATE Box on Right */}
+              <div className="stage-split">
+                {/* LEFT: Visual Diagram Stage */}
                 <div
-                  className="sketch-border"
                   style={{
-                    background: 'rgb(var(--surface))',
-                    padding: '1.25rem',
-                    minHeight: '320px',
+                    minHeight: '350px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
+                    padding: '0.5rem 0.25rem',
                   }}
                 >
                   {track === 'dsa' && dsaStep && (
@@ -713,148 +825,167 @@ export const App: React.FC = () => {
                   {track === 'system-design' && sdStep && <SystemDesignVisualizer step={sdStep} />}
                 </div>
 
-                {/* Step Narration + Live State Variables Strip */}
-                <div
-                  className="sketch-border"
-                  style={{
-                    background: 'rgb(var(--surface))',
-                    padding: '0.95rem 1.1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.7rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
-                    <span
-                      className="ui-chip"
-                      style={{
-                        borderColor: 'rgb(var(--accent) / 0.5)',
-                        background: 'rgb(var(--accent) / 0.12)',
-                        color: 'rgb(var(--accent))',
-                        fontWeight: 700,
-                        flexShrink: 0,
-                      }}
-                    >
-                      STEP {safeStepIdx + 1}/{totalSteps}
-                    </span>
-                    <p style={{ fontSize: '13.5px', fontWeight: 500, lineHeight: 1.55 }}>
-                      {currentNarration}
-                    </p>
-                  </div>
+                {/* RIGHT: Code Panel + STATE Card (Stacked vertically just like screenshot) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <PracticePanel
+                    itemId={activeItemId}
+                    approachLabel={currentApproach.label}
+                    complexityBadge={complexityBadge}
+                    codeLines={currentCodeLines}
+                    activeLine={currentCodeLine}
+                    rubric={activeRubric}
+                    hideSolutionsGlobal={hideSolutions}
+                    isSolved={solvedIds.has(activeItemId)}
+                    onMarkSolved={handleMarkSolved}
+                  />
 
-                  {/* State Variables Inspector */}
-                  {currentVars && currentVars.length > 0 && (
+                  {/* STATE Card below Code Panel */}
+                  <div
+                    className="sketch-border"
+                    style={{
+                      background: 'rgb(var(--surface))',
+                      padding: '0.85rem 1rem',
+                    }}
+                  >
                     <div
                       style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '0.45rem',
-                        paddingTop: '0.5rem',
-                        borderTop: '1px dashed rgb(var(--ink) / 0.12)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '10.5px',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'rgb(var(--mute))',
+                        marginBottom: '0.5rem',
                       }}
                     >
-                      {currentVars.map(([k, v], i) => (
-                        <span key={i} className="ui-chip" style={{ background: 'rgb(var(--paper))' }}>
-                          <span style={{ color: 'rgb(var(--mute))' }}>{k}:</span>{' '}
-                          <strong style={{ color: 'rgb(var(--ink))' }}>{String(v)}</strong>
-                        </span>
-                      ))}
+                      STATE
                     </div>
-                  )}
-                </div>
 
-                {/* Playback Scrubber Bar */}
-                <PlaybackBar
-                  currentIndex={safeStepIdx}
-                  totalSteps={totalSteps}
-                  playing={playing}
-                  speed={speed}
-                  onTogglePlay={() => setPlaying((p) => !p)}
-                  onReset={() => {
-                    setPlaying(false);
-                    setStepIdx(0);
-                  }}
-                  onPrev={() => {
-                    setPlaying(false);
-                    setStepIdx((s) => Math.max(0, s - 1));
-                  }}
-                  onNext={() => {
-                    setPlaying(false);
-                    setStepIdx((s) => Math.min(totalSteps - 1, s + 1));
-                  }}
-                  onScrub={(idx) => {
-                    setPlaying(false);
-                    setStepIdx(idx);
-                  }}
-                  onChangeSpeed={setSpeed}
-                />
+                    {currentVars && currentVars.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {currentVars.map(([k, v], i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'space-between',
+                              gap: '0.75rem',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '12px',
+                            }}
+                          >
+                            <span style={{ color: 'rgb(var(--mute))' }}>{k}</span>
+                            <span style={{ color: 'rgb(var(--ink))', fontWeight: 600, textAlign: 'right' }}>
+                              {String(v)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11.5px', color: 'rgb(var(--mute))' }}>
+                        —
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* RIGHT COLUMN: Synchronized Code + "Don't Paper Code" Practice Engine */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                <PracticePanel
-                  itemId={activeItemId}
-                  approachLabel={currentApproach.label}
-                  complexityBadge={complexityBadge}
-                  codeLines={currentCodeLines}
-                  activeLine={currentCodeLine}
-                  rubric={activeRubric}
-                  hideSolutionsGlobal={hideSolutions}
-                  isSolved={solvedIds.has(activeItemId)}
-                  onMarkSolved={handleMarkSolved}
-                />
+              {/* BOTTOM FULL-WIDTH NARRATION BAR (with ✦ sparkle icon) */}
+              <div
+                className="sketch-border"
+                style={{
+                  background: 'rgb(var(--surface))',
+                  padding: '0.9rem 1.15rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}
+              >
+                <Sparkles size={16} style={{ color: 'rgb(var(--accent))', flexShrink: 0 }} />
+                <p style={{ fontSize: '13.5px', lineHeight: 1.55, color: 'rgb(var(--ink))' }}>
+                  {currentNarration}
+                </p>
+              </div>
 
-                {/* Prev / Next Problem Footer Card */}
-                <div
-                  className="sketch-border-soft"
+              {/* BOTTOM FULL-WIDTH PLAYBACK SCRUBBER BAR */}
+              <PlaybackBar
+                currentIndex={safeStepIdx}
+                totalSteps={totalSteps}
+                playing={playing}
+                speed={speed}
+                onTogglePlay={() => setPlaying((p) => !p)}
+                onReset={() => {
+                  setPlaying(false);
+                  setStepIdx(0);
+                }}
+                onPrev={() => {
+                  setPlaying(false);
+                  setStepIdx((s) => Math.max(0, s - 1));
+                }}
+                onNext={() => {
+                  setPlaying(false);
+                  setStepIdx((s) => Math.min(totalSteps - 1, s + 1));
+                }}
+                onScrub={(idx) => {
+                  setPlaying(false);
+                  setStepIdx(idx);
+                }}
+                onChangeSpeed={setSpeed}
+              />
+
+              {/* Compact Prev / Next Lesson Footer */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingTop: '0.25rem',
+                }}
+              >
+                <button
+                  type="button"
+                  disabled={currentItemIndex <= 0}
+                  onClick={() => {
+                    if (currentItemIndex > 0) {
+                      selectItem(track, flatTrackList[currentItemIndex - 1].id);
+                    }
+                  }}
+                  className="ui-chip"
                   style={{
-                    padding: '0.7rem 0.9rem',
-                    background: 'rgb(var(--surface))',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    padding: '0.35rem 0.7rem',
+                    opacity: currentItemIndex <= 0 ? 0.35 : 1,
                   }}
                 >
-                  <button
-                    type="button"
-                    disabled={currentItemIndex <= 0}
-                    onClick={() => {
-                      if (currentItemIndex > 0) {
-                        selectItem(track, flatTrackList[currentItemIndex - 1].id);
-                      }
-                    }}
-                    className="ui-chip"
-                    style={{ opacity: currentItemIndex <= 0 ? 0.35 : 1, padding: '0.35rem 0.65rem' }}
-                  >
-                    <ChevronLeft size={13} /> Prev Topic
-                  </button>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgb(var(--mute))' }}>
-                    {currentItemIndex + 1} of {flatTrackList.length} in {track.toUpperCase()}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={currentItemIndex >= flatTrackList.length - 1}
-                    onClick={() => {
-                      if (currentItemIndex < flatTrackList.length - 1) {
-                        selectItem(track, flatTrackList[currentItemIndex + 1].id);
-                      }
-                    }}
-                    className="ui-chip"
-                    style={{
-                      opacity: currentItemIndex >= flatTrackList.length - 1 ? 0.35 : 1,
-                      padding: '0.35rem 0.65rem',
-                    }}
-                  >
-                    Next Topic <ChevronRight size={13} />
-                  </button>
-                </div>
+                  <ChevronLeft size={13} />
+                  {currentItemIndex > 0 ? flatTrackList[currentItemIndex - 1].title : 'Start of Track'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={currentItemIndex >= flatTrackList.length - 1}
+                  onClick={() => {
+                    if (currentItemIndex < flatTrackList.length - 1) {
+                      selectItem(track, flatTrackList[currentItemIndex + 1].id);
+                    }
+                  }}
+                  className="ui-chip"
+                  style={{
+                    padding: '0.35rem 0.7rem',
+                    opacity: currentItemIndex >= flatTrackList.length - 1 ? 0.35 : 1,
+                  }}
+                >
+                  {currentItemIndex < flatTrackList.length - 1
+                    ? flatTrackList[currentItemIndex + 1].title
+                    : 'End of Track'}
+                  <ChevronRight size={13} />
+                </button>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Universal ⌘K Command Palette */}
+      {/* Global ⌘K Command Palette */}
       <CommandPalette
         open={searchOpen}
         onClose={() => setSearchOpen(false)}

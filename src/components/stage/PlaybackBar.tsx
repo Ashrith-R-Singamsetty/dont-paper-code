@@ -28,35 +28,43 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
   onScrub,
   onChangeSpeed,
 }) => {
+  const cycleSpeed = () => {
+    const idx = SPEEDS.indexOf(speed);
+    const next = SPEEDS[(idx + 1) % SPEEDS.length];
+    onChangeSpeed(next);
+  };
+
   return (
     <div
       className="sketch-border"
       style={{
-        padding: '0.75rem 1rem',
+        padding: '0.55rem 0.9rem',
         background: 'rgb(var(--surface))',
         display: 'flex',
-        flexWrap: 'wrap',
         alignItems: 'center',
-        gap: '0.85rem',
+        gap: '0.75rem',
+        borderRadius: '12px',
       }}
     >
-      {/* Left Transport Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+      {/* Left Transport Controls (Circular ↻, <, White Circle ▶, >) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
         <button
           type="button"
           onClick={onReset}
           title="Reset to step 1 (Home)"
-          className="sketch-border-soft"
           style={{
-            width: '32px',
-            height: '32px',
+            width: '30px',
+            height: '30px',
+            borderRadius: '999px',
+            border: '1px solid rgb(var(--ink) / 0.14)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: 'rgb(var(--paper))',
+            color: 'rgb(var(--mute))',
           }}
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={13} />
         </button>
 
         <button
@@ -64,18 +72,20 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           onClick={onPrev}
           disabled={currentIndex <= 0}
           title="Previous Step (←)"
-          className="sketch-border-soft"
           style={{
-            width: '32px',
-            height: '32px',
+            width: '30px',
+            height: '30px',
+            borderRadius: '999px',
+            border: '1px solid rgb(var(--ink) / 0.14)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: 'rgb(var(--paper))',
+            color: 'rgb(var(--ink))',
             opacity: currentIndex <= 0 ? 0.35 : 1,
           }}
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft size={15} />
         </button>
 
         <button
@@ -83,21 +93,17 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           onClick={onTogglePlay}
           title="Play / Pause (Space)"
           style={{
+            width: '34px',
             height: '34px',
-            padding: '0 0.9rem',
-            borderRadius: '8px',
-            background: 'rgb(var(--accent))',
+            borderRadius: '999px',
+            background: 'rgb(var(--ink))',
             color: 'rgb(var(--paper))',
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            gap: '0.35rem',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
-            fontWeight: 700,
+            justifyContent: 'center',
           }}
         >
-          {playing ? <Pause size={14} /> : <Play size={14} />}
-          {playing ? 'Pause' : 'Play'}
+          {playing ? <Pause size={14} /> : <Play size={14} style={{ marginLeft: '1px' }} />}
         </button>
 
         <button
@@ -105,23 +111,25 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           onClick={onNext}
           disabled={currentIndex >= totalSteps - 1}
           title="Next Step (→)"
-          className="sketch-border-soft"
           style={{
-            width: '32px',
-            height: '32px',
+            width: '30px',
+            height: '30px',
+            borderRadius: '999px',
+            border: '1px solid rgb(var(--ink) / 0.14)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: 'rgb(var(--paper))',
+            color: 'rgb(var(--ink))',
             opacity: currentIndex >= totalSteps - 1 ? 0.35 : 1,
           }}
         >
-          <ChevronRight size={16} />
+          <ChevronRight size={15} />
         </button>
       </div>
 
       {/* Center Range Scrubber */}
-      <div style={{ flex: 1, minWidth: '140px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ flex: 1, minWidth: '140px', display: 'flex', alignItems: 'center' }}>
         <input
           type="range"
           min={0}
@@ -131,37 +139,25 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           className="scrubber"
           aria-label="Step scrubber"
         />
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11.5px',
-            color: 'rgb(var(--mute))',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {currentIndex + 1} / {totalSteps}
-        </span>
       </div>
 
-      {/* Speed Selector + Shortcut Hint */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-        {SPEEDS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onChangeSpeed(s)}
-            className="ui-chip"
-            style={{
-              borderColor: speed === s ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.14)',
-              background: speed === s ? 'rgb(var(--accent) / 0.14)' : 'rgb(var(--paper))',
-              color: speed === s ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
-              fontWeight: speed === s ? 700 : 500,
-            }}
-          >
-            {s}x
-          </button>
-        ))}
-      </div>
+      {/* Right Speed Pill (Click to cycle 0.5x → 1x → 1.5x → 2x) */}
+      <button
+        type="button"
+        onClick={cycleSpeed}
+        title="Click to cycle playback speed"
+        className="sketch-border-soft"
+        style={{
+          padding: '0.25rem 0.65rem',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '11.5px',
+          fontWeight: 600,
+          background: 'rgb(var(--paper))',
+          color: 'rgb(var(--mute))',
+        }}
+      >
+        {speed}x
+      </button>
     </div>
   );
 };
