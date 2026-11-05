@@ -26,16 +26,55 @@ import { PracticePanel } from './components/stage/PracticePanel';
 import { PlaybackBar } from './components/stage/PlaybackBar';
 import { CommandPalette } from './components/stage/CommandPalette';
 import { LandingView } from './components/stage/LandingView';
+import { DesignSystemView } from './components/stage/DesignSystemView';
 import { MarkdownRenderer } from './components/stage/MarkdownRenderer';
 
+type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system';
+
+function parseLocationPath(pathname: string): {
+  route: PageRoute;
+  dsaId?: string;
+  sdId?: string;
+} {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/design-system') {
+    return { route: 'design-system' };
+  }
+  if (clean === '/dsa' || clean.startsWith('/dsa/')) {
+    const slug = clean.slice('/dsa/'.length);
+    const match = slug ? DSA_PROBLEMS.find((p) => p.id === slug) : undefined;
+    return { route: 'dsa', dsaId: match?.id };
+  }
+  if (
+    clean === '/system-design' ||
+    clean.startsWith('/system-design/') ||
+    clean === '/lld' ||
+    clean.startsWith('/lld/')
+  ) {
+    const parts = clean.split('/').filter(Boolean);
+    const slug = parts.length >= 2 ? parts[parts.length - 1] : undefined;
+    const match = slug ? SYSTEM_DESIGN_LESSONS.find((l) => l.id === slug) : undefined;
+    return { route: 'system-design', sdId: match?.id };
+  }
+  return { route: 'landing' };
+}
+
 export const App: React.FC = () => {
+  const initialParsed = useMemo(() => parseLocationPath(window.location.pathname), []);
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('dpc:theme') as 'light' | 'dark') || 'dark';
   });
-  const [viewMode, setViewMode] = useState<'landing' | 'workspace'>('landing');
-  const [track, setTrack] = useState<TrackKind>('system-design');
-  const [selectedDsaId, setSelectedDsaId] = useState<string>(DSA_PROBLEMS[0].id);
-  const [selectedSdId, setSelectedSdId] = useState<string>(SYSTEM_DESIGN_LESSONS[0].id);
+  const [viewMode, setViewMode] = useState<PageRoute>(initialParsed.route);
+  const [track, setTrack] = useState<TrackKind>(
+    initialParsed.route === 'dsa' ? 'dsa' : 'system-design'
+  );
+  const [selectedDsaId, setSelectedDsaId] = useState<string>(
+    initialParsed.dsaId ?? DSA_PROBLEMS[0].id
+  );
+  const [selectedSdId, setSelectedSdId] = useState<string>(
+    initialParsed.sdId ?? SYSTEM_DESIGN_LESSONS[0].id
+  );
 
   const [approachIdx, setApproachIdx] = useState(0);
   const [stepIdx, setStepIdx] = useState(0);
@@ -100,19 +139,67 @@ export const App: React.FC = () => {
   const totalSteps = currentApproach.steps.length;
   const safeStepIdx = Math.min(stepIdx, Math.max(0, totalSteps - 1));
 
-  const selectItem = (targetTrack: TrackKind, id: string) => {
-    setTrack(targetTrack);
-    if (targetTrack === 'dsa') {
-      setSelectedDsaId(id);
-    } else {
-      setSelectedSdId(id);
+  const navigateToPath = (path: string) => {
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+    const parsed = parseLocationPath(path);
+    setViewMode(parsed.route);
+    if (parsed.route === 'dsa') {
+      setTrack('dsa');
+      if (parsed.dsaId) setSelectedDsaId(parsed.dsaId);
+    } else if (parsed.route === 'system-design') {
+      setTrack('system-design');
+      if (parsed.sdId) setSelectedSdId(parsed.sdId);
     }
     setApproachIdx(0);
     setStepIdx(0);
     setPlaying(false);
     setSdMode('watch');
-    setViewMode('workspace');
   };
+
+  const selectItem = (targetTrack: TrackKind, id: string) => {
+    setTrack(targetTrack);
+    if (targetTrack === 'dsa') {
+      setSelectedDsaId(id);
+      setViewMode('dsa');
+      const nextPath = `/dsa/${id}`;
+      if (window.location.pathname !== nextPath) {
+        window.history.pushState({}, '', nextPath);
+      }
+    } else {
+      setSelectedSdId(id);
+      setViewMode('system-design');
+      const nextPath = `/system-design/${id}`;
+      if (window.location.pathname !== nextPath) {
+        window.history.pushState({}, '', nextPath);
+      }
+    }
+    setApproachIdx(0);
+    setStepIdx(0);
+    setPlaying(false);
+    setSdMode('watch');
+  };
+
+  // Sync browser Back / Forward buttons (popstate)
+  useEffect(() => {
+    const onPopState = () => {
+      const parsed = parseLocationPath(window.location.pathname);
+      setViewMode(parsed.route);
+      if (parsed.route === 'dsa') {
+        setTrack('dsa');
+        if (parsed.dsaId) setSelectedDsaId(parsed.dsaId);
+      } else if (parsed.route === 'system-design') {
+        setTrack('system-design');
+        if (parsed.sdId) setSelectedSdId(parsed.sdId);
+      }
+      setApproachIdx(0);
+      setStepIdx(0);
+      setPlaying(false);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // Auto-advance timer when playing
   useEffect(() => {
@@ -136,7 +223,7 @@ export const App: React.FC = () => {
         setSearchOpen((v) => !v);
         return;
       }
-      if (viewMode !== 'workspace') return;
+      if (viewMode !== 'dsa' && viewMode !== 'system-design') return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -161,6 +248,23 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [viewMode, totalSteps]);
 
+  if (viewMode === 'design-system') {
+    return (
+      <>
+        <DesignSystemView
+          theme={theme}
+          onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+          onNavigate={navigateToPath}
+        />
+        <CommandPalette
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onSelect={selectItem}
+        />
+      </>
+    );
+  }
+
   if (viewMode === 'landing') {
     return (
       <>
@@ -169,6 +273,7 @@ export const App: React.FC = () => {
           onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
           onOpenSearch={() => setSearchOpen(true)}
           onLaunchWorkspace={selectItem}
+          onNavigate={navigateToPath}
           solvedIds={solvedIds}
         />
         <CommandPalette
@@ -236,7 +341,7 @@ export const App: React.FC = () => {
         >
           <button
             type="button"
-            onClick={() => setViewMode('landing')}
+            onClick={() => navigateToPath('/')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left' }}
           >
             <span
@@ -501,20 +606,38 @@ export const App: React.FC = () => {
             )}
             <button
               type="button"
-              onClick={() => setViewMode('landing')}
+              onClick={() => navigateToPath('/')}
               style={{ color: 'rgb(var(--mute))', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-              title="Back to Home"
+              title="Back to Home (/)"
             >
               <Home size={13} />
             </button>
             <span style={{ color: 'rgb(var(--mute))' }}>
-              {track === 'dsa' ? 'DSA Visual' : 'LLD Visual'}
+              {track === 'dsa' ? '/dsa' : '/system-design'}
             </span>
             <span style={{ color: 'rgb(var(--mute) / 0.5)' }}>›</span>
             <span style={{ fontWeight: 600, color: 'rgb(var(--ink))' }}>{currentGroupTitle}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => navigateToPath(track === 'dsa' ? '/system-design' : '/dsa')}
+              className="ui-chip"
+              style={{ padding: '0.22rem 0.55rem' }}
+            >
+              {track === 'dsa' ? '→ /system-design' : '→ /dsa'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateToPath('/design-system')}
+              className="ui-chip"
+              style={{ padding: '0.22rem 0.55rem' }}
+            >
+              /design-system
+            </button>
+
             <button
               type="button"
               onClick={toggleHideSolutions}

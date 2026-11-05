@@ -23,6 +23,7 @@ interface LandingViewProps {
   onToggleTheme: () => void;
   onOpenSearch: () => void;
   onLaunchWorkspace: (track: TrackKind, itemId: string) => void;
+  onNavigate: (path: string) => void;
   solvedIds: Set<string>;
 }
 
@@ -36,6 +37,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
   onToggleTheme,
   onOpenSearch,
   onLaunchWorkspace,
+  onNavigate,
   solvedIds,
 }) => {
   const [heroStepIdx, setHeroStepIdx] = useState(0);
@@ -106,7 +108,32 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => onNavigate('/dsa')}
+              className="ui-chip"
+              style={{ padding: '0.32rem 0.65rem', fontWeight: 600 }}
+            >
+              <Code2 size={12} style={{ color: 'rgb(var(--accent))' }} /> /dsa
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('/system-design')}
+              className="ui-chip"
+              style={{ padding: '0.32rem 0.65rem', fontWeight: 600 }}
+            >
+              <Cpu size={12} style={{ color: 'rgb(var(--accent2))' }} /> /system-design
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('/design-system')}
+              className="ui-chip"
+              style={{ padding: '0.32rem 0.65rem', fontWeight: 600 }}
+            >
+              /design-system
+            </button>
+
             <button
               type="button"
               onClick={onOpenSearch}
