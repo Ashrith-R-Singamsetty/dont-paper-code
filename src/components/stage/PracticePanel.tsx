@@ -12,6 +12,7 @@ interface PracticePanelProps {
   hideSolutionsGlobal: boolean;
   isSolved: boolean;
   onMarkSolved: (itemId: string) => void;
+  highlightedVar?: string | null;
 }
 
 interface EvaluationResult {
@@ -39,6 +40,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   hideSolutionsGlobal,
   isSolved,
   onMarkSolved,
+  highlightedVar,
 }) => {
   const [practiceOpen, setPracticeOpen] = useState(false);
   const [revealedLocally, setRevealedLocally] = useState(false);
@@ -360,20 +362,74 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
             {codeLines.map((line, idx) => {
               const isActive =
                 activeLine !== undefined && (idx + 1 === activeLine || (activeLine === 0 && idx === 0));
+              const lineMentionsVar = Boolean(
+                highlightedVar &&
+                  highlightedVar.trim().length > 0 &&
+                  new RegExp(`\\b${highlightedVar}\\b|\\[${highlightedVar}\\]`, 'i').test(line)
+              );
+
               return (
-                <div key={idx} className={`code-line ${isActive ? 'code-line-active' : ''}`}>
-                  <span
-                    style={{
-                      width: '18px',
-                      textAlign: 'right',
-                      color: 'rgb(var(--mute) / 0.65)',
-                      fontSize: '11px',
-                      userSelect: 'none',
-                    }}
-                  >
-                    {idx + 1}
-                  </span>
-                  <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{line || ' '}</span>
+                <div
+                  key={idx}
+                  className={`code-line ${isActive ? 'code-line-active' : ''}`}
+                  style={{
+                    background: lineMentionsVar
+                      ? 'rgb(var(--accent) / 0.18)'
+                      : isActive
+                        ? 'rgb(var(--accent) / 0.14)'
+                        : 'transparent',
+                    borderLeftColor: lineMentionsVar
+                      ? 'rgb(var(--accent))'
+                      : isActive
+                        ? 'rgb(var(--accent))'
+                        : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+                    <span
+                      style={{
+                        width: '18px',
+                        textAlign: 'right',
+                        color: 'rgb(var(--mute) / 0.65)',
+                        fontSize: '11px',
+                        userSelect: 'none',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        color: lineMentionsVar ? 'rgb(var(--ink))' : 'inherit',
+                        fontWeight: lineMentionsVar ? 600 : 400,
+                      }}
+                    >
+                      {line || ' '}
+                    </span>
+                  </div>
+
+                  {lineMentionsVar && (
+                    <span
+                      className="ui-chip"
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        color: 'rgb(var(--accent))',
+                        borderColor: 'rgb(var(--accent) / 0.45)',
+                        background: 'rgb(var(--accent) / 0.12)',
+                        padding: '1px 5px',
+                        marginLeft: '0.5rem',
+                        flexShrink: 0,
+                      }}
+                    >
+                      ← uses {highlightedVar}
+                    </span>
+                  )}
                 </div>
               );
             })}

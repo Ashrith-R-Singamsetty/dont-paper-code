@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
+  BarChart3,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -13,10 +14,12 @@ import {
   Search,
   Sparkles,
   Sun,
+  Trophy,
   X,
 } from 'lucide-react';
 import { DSA_PATTERNS, DSA_PROBLEMS } from '../../data/dsaProblems';
 import { SYSTEM_DESIGN_LESSONS, SYSTEM_DESIGN_MODULES } from '../../data/systemDesignLessons';
+import { CURATED_PLAYLISTS, getPlaylistMatches } from '../../data/playlists';
 import { TrackKind } from '../../types/curriculum';
 
 interface LandingViewProps {
@@ -45,6 +48,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
   const [activeTab, setActiveTab] = useState<TrackKind>('dsa');
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>('two-pointers');
   const [quickFilter, setQuickFilter] = useState('');
+  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -170,6 +174,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 <Sparkles size={14} style={{ color: 'rgb(var(--accent))' }} />
                 <span>Aptitude</span>
               </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('/progress')}
+                className="nav-link"
+              >
+                <BarChart3 size={14} style={{ color: 'rgb(var(--accent))' }} />
+                <span>Progress</span>
+              </button>
             </nav>
 
             {/* Subtle Divider */}
@@ -209,14 +221,17 @@ export const LandingView: React.FC<LandingViewProps> = ({
               </kbd>
             </button>
 
-            {/* Solved Stats Pill */}
-            <div
+            {/* Solved Stats Pill -> Links to Candidate Progress Dashboard */}
+            <button
+              type="button"
+              onClick={() => onNavigate('/progress')}
               className="status-pill"
-              title={`${solvedIds.size} challenges solved`}
+              style={{ cursor: 'pointer' }}
+              title="Open Candidate Progress & Spaced Recall Dashboard (/progress)"
             >
               <Flame size={12} style={{ color: 'rgb(var(--accent))' }} />
               <span>{solvedIds.size} Solved</span>
-            </div>
+            </button>
 
             {/* Theme Toggle Button */}
             <button
@@ -626,7 +641,134 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 </button>
               )}
             </div>
+
+            {/* Curated Study Tracks / Playlists Pill Selector */}
+            {activeTab === 'dsa' && (
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  flexWrap: 'wrap',
+                  marginTop: '0.75rem',
+                  paddingTop: '0.75rem',
+                  borderTop: '1px solid rgb(var(--ink) / 0.08)',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10.5px',
+                    color: 'rgb(var(--mute))',
+                    letterSpacing: '0.04em',
+                    fontWeight: 700,
+                    marginRight: '0.2rem',
+                  }}
+                >
+                  CURATED TRACKS:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlaylist(null)}
+                  style={{
+                    padding: '0.24rem 0.7rem',
+                    fontSize: '12px',
+                    borderRadius: '999px',
+                    background: !selectedPlaylist ? 'rgb(var(--ink))' : 'rgb(var(--surface))',
+                    color: !selectedPlaylist ? 'rgb(var(--paper))' : 'rgb(var(--sketch))',
+                    border: `1px solid ${!selectedPlaylist ? 'rgb(var(--ink))' : 'rgb(var(--ink) / 0.14)'}`,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 140ms ease',
+                  }}
+                >
+                  All ({DSA_PROBLEMS.length})
+                </button>
+                {CURATED_PLAYLISTS.map((pl) => {
+                  const isSelected = selectedPlaylist === pl.id;
+                  const solvedInPl = pl.problemIds.filter((id) => solvedIds.has(id)).length;
+                  return (
+                    <button
+                      key={pl.id}
+                      type="button"
+                      onClick={() => setSelectedPlaylist(isSelected ? null : pl.id)}
+                      style={{
+                        padding: '0.24rem 0.7rem',
+                        fontSize: '12px',
+                        borderRadius: '999px',
+                        background: isSelected ? 'rgb(var(--accent) / 0.16)' : 'rgb(var(--surface))',
+                        color: isSelected ? 'rgb(var(--accent))' : 'rgb(var(--sketch))',
+                        border: `1px solid ${isSelected ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.14)'}`,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        transition: 'all 140ms ease',
+                      }}
+                    >
+                      <span>{pl.shortTitle}</span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '10.5px',
+                          color: isSelected ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
+                        }}
+                      >
+                        {solvedInPl}/{pl.problemIds.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
+
+          {/* Active Playlist Announcement Card */}
+          {activeTab === 'dsa' && selectedPlaylist && (
+            <div
+              className="sketch-border-soft"
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem 1rem',
+                background: 'rgb(var(--accent) / 0.08)',
+                border: '1px solid rgb(var(--accent) / 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.65rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <Trophy size={16} style={{ color: 'rgb(var(--accent))', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '13px', color: 'rgb(var(--ink))' }}>
+                    Active Track: {CURATED_PLAYLISTS.find((p) => p.id === selectedPlaylist)?.title}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'rgb(var(--mute))' }}>
+                    {CURATED_PLAYLISTS.find((p) => p.id === selectedPlaylist)?.tagline}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPlaylist(null)}
+                style={{
+                  fontSize: '11.5px',
+                  color: 'rgb(var(--accent))',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                }}
+              >
+                Clear track filter
+              </button>
+            </div>
+          )}
 
           {/* Bento Grid of Curriculum Cards */}
           <div
@@ -639,7 +781,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
           >
             {activeTab === 'dsa'
               ? DSA_PATTERNS.map((pat) => {
-                  const allProblems = DSA_PROBLEMS.filter((p) => p.patternId === pat.id);
+                  const allProblems = DSA_PROBLEMS.filter(
+                    (p) => p.patternId === pat.id && getPlaylistMatches(selectedPlaylist, p)
+                  );
+                  if (selectedPlaylist && allProblems.length === 0) return null;
                   const filteredProblems = q
                     ? allProblems.filter(
                         (p) =>

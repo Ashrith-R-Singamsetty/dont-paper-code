@@ -5,6 +5,7 @@ interface DsaVisualizerProps {
   renderMode?: DsaRenderMode;
   defaultInput?: Array<string | number>;
   step: DsaStep;
+  highlightedVar?: string | null;
 }
 
 const POINTER_COLORS: Record<string, string> = {
@@ -19,6 +20,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({
   renderMode = 'cells',
   defaultInput = [],
   step,
+  highlightedVar,
 }) => {
   const values = step.arrValues ?? defaultInput;
   const highlights = new Set(step.highlights ?? []);
@@ -50,11 +52,26 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({
         const inRegion = step.regions?.some((r) => idx >= r.start && idx <= r.end);
         const cellPointers = (step.pointers ?? []).filter((p) => p.index === idx);
 
+        const isPointerVarMatch = Boolean(
+          highlightedVar &&
+            cellPointers.some((p) => p.name.toLowerCase() === highlightedVar.toLowerCase())
+        );
+        const isVarValueMatch = Boolean(
+          highlightedVar &&
+            step.vars?.some(
+              ([k, v]) => k.toLowerCase() === highlightedVar.toLowerCase() && Number(v) === idx
+            )
+        );
+
         let bg = 'rgb(var(--idle-bg))';
         let border = 'rgb(var(--ink) / 0.25)';
         let scale = 'scale(1)';
 
-        if (isSwapping || isBest) {
+        if (isPointerVarMatch || isVarValueMatch) {
+          bg = 'rgb(var(--accent) / 0.18)';
+          border = 'rgb(var(--accent))';
+          scale = 'scale(1.14)';
+        } else if (isSwapping || isBest) {
           bg = 'rgb(var(--gold-bg))';
           border = 'rgb(var(--gold-stroke))';
           scale = 'scale(1.06)';
@@ -147,7 +164,12 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({
                 }}
               >
                 {cellPointers.map((p, pIdx) => {
-                  const color = POINTER_COLORS[p.color ?? 'accent'] ?? 'rgb(var(--accent))';
+                  const isThisPointerActive = Boolean(
+                    highlightedVar && p.name.toLowerCase() === highlightedVar.toLowerCase()
+                  );
+                  const color = isThisPointerActive
+                    ? 'rgb(var(--accent))'
+                    : POINTER_COLORS[p.color ?? 'accent'] ?? 'rgb(var(--accent))';
                   return (
                     <div
                       key={pIdx}
@@ -159,6 +181,8 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({
                         fontFamily: 'var(--font-mono)',
                         fontSize: '10.5px',
                         fontWeight: 700,
+                        transform: isThisPointerActive ? 'scale(1.28)' : 'scale(1)',
+                        transition: 'transform 180ms ease',
                       }}
                     >
                       <span style={{ lineHeight: 0.9 }}>▲</span>
@@ -167,7 +191,8 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({
                           padding: '1px 6px',
                           borderRadius: '5px',
                           border: `1.5px solid ${color}`,
-                          background: 'rgb(var(--surface))',
+                          background: isThisPointerActive ? 'rgb(var(--accent) / 0.15)' : 'rgb(var(--surface))',
+                          boxShadow: isThisPointerActive ? '0 0 10px rgb(var(--accent) / 0.5)' : 'none',
                         }}
                       >
                         {p.name}

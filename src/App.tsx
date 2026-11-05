@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  BarChart3,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -38,8 +39,11 @@ const DesignSystemView = React.lazy(() =>
 const CommandPalette = React.lazy(() =>
   import('./components/stage/CommandPalette').then((m) => ({ default: m.CommandPalette }))
 );
+const ProgressDashboard = React.lazy(() =>
+  import('./components/stage/ProgressDashboard').then((m) => ({ default: m.ProgressDashboard }))
+);
 
-type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system' | 'aptitude';
+type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system' | 'aptitude' | 'progress';
 
 interface QueryParams {
   step?: number;
@@ -79,6 +83,9 @@ function parseLocationPath(pathname: string): {
   sdId?: string;
 } {
   const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/progress') {
+    return { route: 'progress' };
+  }
   if (clean === '/design-system') {
     return { route: 'design-system' };
   }
@@ -131,6 +138,7 @@ export const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [highlightedVar, setHighlightedVar] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [hideSolutions, setHideSolutions] = useState<boolean>(() => {
     return localStorage.getItem('dpc:hideSolutions') === '1';
@@ -305,6 +313,11 @@ export const App: React.FC = () => {
     return () => window.clearInterval(timer);
   }, [playing, speed, totalSteps]);
 
+  // Clear variable trace highlight when switching problem, module, or approach
+  useEffect(() => {
+    setHighlightedVar(null);
+  }, [selectedDsaId, selectedSdId, approachIdx]);
+
   // Global keyboard shortcuts (⌘K, Space, ←, →, Home)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -399,6 +412,44 @@ export const App: React.FC = () => {
           theme={theme}
           onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
           onNavigate={navigateToPath}
+        />
+        {searchOpen && (
+          <CommandPalette
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onSelect={selectItem}
+          />
+        )}
+      </React.Suspense>
+    );
+  }
+
+  if (viewMode === 'progress') {
+    return (
+      <React.Suspense
+        fallback={
+          <div
+            style={{
+              height: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+              color: 'rgb(var(--mute))',
+            }}
+          >
+            Loading Progress Dashboard...
+          </div>
+        }
+      >
+        <ProgressDashboard
+          theme={theme}
+          onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+          onNavigate={navigateToPath}
+          onLaunchWorkspace={selectItem}
+          solvedIds={solvedIds}
+          onMarkSolved={handleMarkSolved}
         />
         {searchOpen && (
           <CommandPalette
@@ -799,6 +850,17 @@ export const App: React.FC = () => {
               <span>Aptitude</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => navigateToPath('/progress')}
+              className="nav-link"
+              style={{ padding: '0.25rem 0.6rem', fontSize: '12px' }}
+              title="Track problem completion, playlists, and spaced repetition"
+            >
+              <BarChart3 size={13} style={{ color: 'rgb(var(--accent))' }} />
+              <span>Progress</span>
+            </button>
+
             <div style={{ width: '1px', height: '16px', background: 'rgb(var(--ink) / 0.1)', margin: '0 2px' }} />
 
             <button
@@ -839,13 +901,24 @@ export const App: React.FC = () => {
               {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
             </button>
 
-            <div
+            <button
+              type="button"
+              onClick={() => navigateToPath('/progress')}
               className="status-pill"
-              style={{ padding: '0.2rem 0.55rem', fontSize: '11px' }}
-              title={`${solvedIds.size} challenges solved`}
+              style={{
+                padding: '0.2rem 0.55rem',
+                fontSize: '11px',
+                cursor: 'pointer',
+                background: 'transparent',
+                border: '1px solid rgb(var(--ink) / 0.1)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}
+              title={`${solvedIds.size} challenges solved · View progress & review queue`}
             >
               <Flame size={12} style={{ color: 'rgb(var(--accent))' }} /> {solvedIds.size}
-            </div>
+            </button>
           </div>
         </header>
 
@@ -1144,9 +1217,12 @@ export const App: React.FC = () => {
                       renderMode={currentDsa.render ?? 'cells'}
                       step={dsaStep}
                       defaultInput={currentDsa.input}
+                      highlightedVar={highlightedVar}
                     />
                   )}
-                  {track === 'system-design' && sdStep && <SystemDesignVisualizer step={sdStep} />}
+                  {track === 'system-design' && sdStep && (
+                    <SystemDesignVisualizer step={sdStep} highlightedVar={highlightedVar} />
+                  )}
                 </div>
 
                 {/* RIGHT: Code Panel + STATE Card (Stacked vertically just like screenshot) */}
@@ -1161,49 +1237,155 @@ export const App: React.FC = () => {
                     hideSolutionsGlobal={hideSolutions}
                     isSolved={solvedIds.has(activeItemId)}
                     onMarkSolved={handleMarkSolved}
+                    highlightedVar={highlightedVar}
                   />
 
-                  {/* STATE Card below Code Panel */}
+                  {/* STATE Card below Code Panel - Interactive click-to-trace variable inspections */}
                   <div
                     className="sketch-border"
                     style={{
                       background: 'rgb(var(--surface))',
                       padding: '0.85rem 1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
                     }}
                   >
                     <div
                       style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '10.5px',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'rgb(var(--mute))',
-                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
                       }}
                     >
-                      STATE
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '10.5px',
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: 'rgb(var(--mute))',
+                          }}
+                        >
+                          STATE
+                        </span>
+                        {highlightedVar && (
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '10px',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              background: 'rgb(var(--accent) / 0.15)',
+                              color: 'rgb(var(--accent))',
+                              fontWeight: 700,
+                            }}
+                          >
+                            Tracing: {highlightedVar}
+                          </span>
+                        )}
+                      </div>
+                      {highlightedVar ? (
+                        <button
+                          type="button"
+                          onClick={() => setHighlightedVar(null)}
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '10px',
+                            color: 'rgb(var(--mute))',
+                            textDecoration: 'underline',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '2px 4px',
+                          }}
+                          title="Clear active variable trace"
+                        >
+                          Clear trace
+                        </button>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '10px',
+                            color: 'rgb(var(--mute) / 0.7)',
+                          }}
+                        >
+                          click variable to trace
+                        </span>
+                      )}
                     </div>
 
                     {currentVars && currentVars.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        {currentVars.map(([k, v], i) => (
-                          <div
-                            key={i}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'baseline',
-                              justifyContent: 'space-between',
-                              gap: '0.75rem',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '12px',
-                            }}
-                          >
-                            <span style={{ color: 'rgb(var(--mute))' }}>{k}</span>
-                            <span style={{ color: 'rgb(var(--ink))', fontWeight: 600, textAlign: 'right' }}>
-                              {String(v)}
-                            </span>
-                          </div>
-                        ))}
+                        {currentVars.map(([k, v], i) => {
+                          const isTraceActive = highlightedVar === k;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setHighlightedVar(isTraceActive ? null : k)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'baseline',
+                                justifyContent: 'space-between',
+                                gap: '0.75rem',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '12px',
+                                background: isTraceActive
+                                  ? 'rgb(var(--accent) / 0.14)'
+                                  : 'rgb(var(--ink) / 0.02)',
+                                border: isTraceActive
+                                  ? '1px solid rgb(var(--accent))'
+                                  : '1px solid transparent',
+                                borderRadius: '4px',
+                                padding: '3px 6px',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                transition: 'all 0.12s ease',
+                              }}
+                              title={
+                                isTraceActive
+                                  ? `Click to stop tracing "${k}"`
+                                  : `Click to highlight "${k}" on canvas and code simultaneously`
+                              }
+                            >
+                              <span
+                                style={{
+                                  color: isTraceActive ? 'rgb(var(--accent))' : 'rgb(var(--mute))',
+                                  fontWeight: isTraceActive ? 700 : 500,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                }}
+                              >
+                                {isTraceActive && (
+                                  <span
+                                    style={{
+                                      width: '6px',
+                                      height: '6px',
+                                      borderRadius: '50%',
+                                      background: 'rgb(var(--accent))',
+                                      display: 'inline-block',
+                                    }}
+                                  />
+                                )}
+                                {k}
+                              </span>
+                              <span
+                                style={{
+                                  color: isTraceActive ? 'rgb(var(--accent))' : 'rgb(var(--ink))',
+                                  fontWeight: 600,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                {String(v)}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : (
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11.5px', color: 'rgb(var(--mute))' }}>

@@ -3,6 +3,7 @@ import { SdStep, UmlClassNode } from '../../types/curriculum';
 
 interface SystemDesignVisualizerProps {
   step: SdStep;
+  highlightedVar?: string | null;
 }
 
 const InteractiveDiagramCanvas: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -130,7 +131,7 @@ function getBoxHeight(c: UmlClassNode): number {
   return Math.max(76, 36 + stereo + rowsHeight + 12);
 }
 
-export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ step }) => {
+export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ step, highlightedVar }) => {
   // 1. UML CLASS DIAGRAM RENDERER
   if (step.view === 'class') {
     const cd = step.classDiagram;
