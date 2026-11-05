@@ -361,7 +361,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                             {prob.title}
                           </span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '11.5px', color: 'rgb(var(--accent))' }}>
-                            {prob.render} <ArrowRight size={13} />
+                            {prob.render ?? 'cells'} <ArrowRight size={13} />
                           </span>
                         </button>
                       ))}

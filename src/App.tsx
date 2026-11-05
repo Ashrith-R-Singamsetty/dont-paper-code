@@ -179,11 +179,17 @@ export const App: React.FC = () => {
 
   const activeItemId = track === 'dsa' ? currentDsa.id : currentSd.id;
   const activeTitle = track === 'dsa' ? currentDsa.title : currentSd.title;
-  const activeSubtitle = track === 'dsa' ? currentDsa.subtitle : currentSd.subtitle;
+  const activeSubtitle = (track === 'dsa' ? currentDsa.subtitle : currentSd.subtitle) ?? '';
   const activeStatement = track === 'dsa' ? currentDsa.statement : currentSd.statement;
-  const activeCompanies = track === 'dsa' ? currentDsa.companies : currentSd.companies;
-  const activeDifficulty = track === 'dsa' ? currentDsa.difficulty : currentSd.difficulty;
-  const activeRubric = track === 'dsa' ? currentDsa.rubric : currentSd.rubric;
+  const activeCompanies = (track === 'dsa' ? currentDsa.companies : currentSd.companies) ?? [];
+  const activeDifficulty =
+    (track === 'dsa' ? currentDsa.leetcode?.difficulty ?? currentDsa.difficulty : currentSd.difficulty) ?? 'Medium';
+  const defaultRubric = {
+    prompt: `Write the core pseudocode or design contract for "${activeTitle}".`,
+    starterHint: '// Write your logic here...',
+    requiredGroups: [{ concept: 'Core logic', keywords: ['(', '='], missingHint: 'Write a complete block.' }],
+  };
+  const activeRubric = (track === 'dsa' ? currentDsa.rubric : currentSd.rubric) ?? defaultRubric;
 
   const dsaStep = track === 'dsa' ? currentDsa.approaches[safeApproachIdx].steps[safeStepIdx] : null;
   const sdStep = track === 'system-design' ? currentSd.approaches[safeApproachIdx].steps[safeStepIdx] : null;
@@ -194,7 +200,7 @@ export const App: React.FC = () => {
     track === 'dsa'
       ? currentDsa.approaches[safeApproachIdx].pseudocode
       : currentSd.approaches[safeApproachIdx].code;
-  const currentCodeLine = dsaStep ? dsaStep.codeLine : sdStep?.codeLine ?? 0;
+  const currentCodeLine = (dsaStep ? dsaStep.codeLine : sdStep?.codeLine) ?? 1;
   const complexityBadge =
     track === 'dsa'
       ? `${currentDsa.approaches[safeApproachIdx].complexity.time} · ${currentDsa.approaches[safeApproachIdx].complexity.space}`
@@ -679,7 +685,7 @@ export const App: React.FC = () => {
               >
                 SYSTEM DESIGN ARCHITECTURE NOTES · {currentSd.title.toUpperCase()}
               </div>
-              <MarkdownRenderer markdown={currentSd.theoryMarkdown} />
+              <MarkdownRenderer markdown={currentSd.theory ?? currentSd.theoryMarkdown ?? ''} />
             </div>
           ) : (
             <div className="stage-split">
@@ -698,7 +704,11 @@ export const App: React.FC = () => {
                   }}
                 >
                   {track === 'dsa' && dsaStep && (
-                    <DsaVisualizer renderMode={currentDsa.render} step={dsaStep} />
+                    <DsaVisualizer
+                      renderMode={currentDsa.render ?? 'cells'}
+                      step={dsaStep}
+                      defaultInput={currentDsa.input}
+                    />
                   )}
                   {track === 'system-design' && sdStep && <SystemDesignVisualizer step={sdStep} />}
                 </div>

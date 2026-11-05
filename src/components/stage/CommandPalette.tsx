@@ -25,17 +25,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, o
     (p) =>
       !q ||
       p.title.toLowerCase().includes(q) ||
-      p.subtitle.toLowerCase().includes(q) ||
-      p.companies.some((c) => c.toLowerCase().includes(q))
+      (p.subtitle ?? '').toLowerCase().includes(q) ||
+      (p.companies ?? []).some((c) => c.toLowerCase().includes(q))
   );
 
   const sdMatches = SYSTEM_DESIGN_LESSONS.filter(
     (l) =>
       !q ||
       l.title.toLowerCase().includes(q) ||
-      l.subtitle.toLowerCase().includes(q) ||
+      (l.subtitle ?? '').toLowerCase().includes(q) ||
       l.kind.toLowerCase().includes(q) ||
-      l.companies.some((c) => c.toLowerCase().includes(q))
+      (l.companies ?? []).some((c) => c.toLowerCase().includes(q))
   );
 
   return (
@@ -130,9 +130,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, o
                 >
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '13.5px' }}>{item.title}</div>
-                    <div style={{ fontSize: '11.5px', color: 'rgb(var(--mute))' }}>{item.subtitle}</div>
+                    <div style={{ fontSize: '11.5px', color: 'rgb(var(--mute))' }}>{item.subtitle ?? ''}</div>
                   </div>
-                  <span className="ui-chip">{item.difficulty}</span>
+                  <span className="ui-chip">{item.leetcode?.difficulty ?? item.difficulty ?? 'Medium'}</span>
                 </button>
               ))}
             </div>

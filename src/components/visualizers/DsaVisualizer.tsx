@@ -2,7 +2,8 @@ import React from 'react';
 import { DsaRenderMode, DsaStep } from '../../types/curriculum';
 
 interface DsaVisualizerProps {
-  renderMode: DsaRenderMode;
+  renderMode?: DsaRenderMode;
+  defaultInput?: Array<string | number>;
   step: DsaStep;
 }
 
@@ -14,13 +15,18 @@ const POINTER_COLORS: Record<string, string> = {
   gold: 'rgb(var(--gold-stroke))',
 };
 
-export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }) => {
-  const values = step.arrValues ?? [];
+export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({
+  renderMode = 'cells',
+  defaultInput = [],
+  step,
+}) => {
+  const values = step.arrValues ?? defaultInput;
   const highlights = new Set(step.highlights ?? []);
   const reads = new Set(step.reads ?? []);
   const dimmed = new Set(step.dimmed ?? []);
   const doneIndices = new Set(step.doneIndices ?? []);
-  const bestIndices = new Set(step.bestIndices ?? []);
+  const bestIndices = new Set(step.best?.indices ?? step.bestIndices ?? []);
+  const bestLabel = step.best?.label ?? step.bestLabel;
 
   const renderCellsRow = (compact = false) => (
     <div
@@ -48,10 +54,10 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
         let border = 'rgb(var(--ink) / 0.25)';
         let scale = 'scale(1)';
 
-        if (isSwapping) {
+        if (isSwapping || isBest) {
           bg = 'rgb(var(--gold-bg))';
           border = 'rgb(var(--gold-stroke))';
-          scale = 'scale(1.08)';
+          scale = 'scale(1.06)';
         } else if (isDone) {
           bg = 'rgb(var(--done-bg))';
           border = 'rgb(var(--done-stroke))';
@@ -67,7 +73,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
           border = 'rgb(var(--accent) / 0.45)';
         }
 
-        const boxSize = compact ? '44px' : '56px';
+        const boxSize = compact ? '44px' : '54px';
 
         return (
           <div
@@ -79,7 +85,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
               position: 'relative',
               opacity: isDim ? 0.35 : 1,
               transform: scale,
-              transition: 'all 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+              transition: 'all 240ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
           >
             <span
@@ -104,9 +110,9 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontFamily: 'var(--font-mono)',
-                fontSize: compact ? '0.95rem' : '1.12rem',
+                fontSize: compact ? '0.95rem' : '1.1rem',
                 fontWeight: 700,
-                boxShadow: isBest ? '0 0 0 3px rgb(var(--gold-stroke) / 0.45)' : 'none',
+                boxShadow: isBest ? '0 0 0 3px rgb(var(--gold-stroke) / 0.4)' : 'none',
                 position: 'relative',
               }}
             >
@@ -141,7 +147,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                 }}
               >
                 {cellPointers.map((p, pIdx) => {
-                  const color = POINTER_COLORS[p.color ?? 'accent'];
+                  const color = POINTER_COLORS[p.color ?? 'accent'] ?? 'rgb(var(--accent))';
                   return (
                     <div
                       key={pIdx}
@@ -155,7 +161,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                         fontWeight: 700,
                       }}
                     >
-                      <span style={{ lineHeight: 0.9 }}>↑</span>
+                      <span style={{ lineHeight: 0.9 }}>▲</span>
                       <span
                         style={{
                           padding: '1px 6px',
@@ -185,7 +191,6 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
           viewBox={`0 0 620 ${height}`}
           style={{ width: '100%', maxWidth: '620px', margin: '0 auto', display: 'block' }}
         >
-          {/* Tree Edges (binary leftId/rightId + N-ary childrenIds) */}
           {nodes.map((node) => {
             const x1 = (node.x / 100) * 600 + 10;
             const y1 = (node.y / 100) * (height - 15);
@@ -218,7 +223,6 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
             );
           })}
 
-          {/* Tree Nodes */}
           {nodes.map((node) => {
             const cx = (node.x / 100) * 600 + 10;
             const cy = (node.y / 100) * (height - 15);
@@ -296,9 +300,9 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
-      {/* Region / Swap / Best Banner */}
-      {(step.regions?.length || step.bestLabel || step.swapPair) && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+      {/* Region / Swap / Best / Area Banner */}
+      {(step.regions?.length || bestLabel || step.swapPair || step.area?.label || step.levels?.length) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', justifyContent: 'center' }}>
           {step.regions?.map((reg, idx) => (
             <span
               key={idx}
@@ -310,7 +314,32 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                 fontWeight: 600,
               }}
             >
-              Window [{reg.start}..{reg.end}]{reg.label ? ` · ${reg.label}` : ''}
+              [{reg.start}..{reg.end}]{reg.label ? ` · ${reg.label}` : ''}
+            </span>
+          ))}
+          {step.area?.label && (
+            <span
+              className="ui-chip"
+              style={{
+                borderColor: 'rgb(var(--accent2) / 0.55)',
+                background: 'rgb(var(--read-bg))',
+                color: 'rgb(var(--accent2))',
+                fontWeight: 700,
+              }}
+            >
+              ▭ {step.area.label}
+            </span>
+          )}
+          {step.levels?.map((lv) => (
+            <span
+              key={lv.id}
+              className="ui-chip"
+              style={{
+                borderColor: 'rgb(var(--accent) / 0.45)',
+                fontWeight: 600,
+              }}
+            >
+              ― {lv.label ?? `${lv.id} = ${lv.y}`}
             </span>
           ))}
           {step.swapPair && (
@@ -325,7 +354,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
               ⇄ Swap [{step.swapPair[0]}] ↔ [{step.swapPair[1]}]
             </span>
           )}
-          {step.bestLabel && (
+          {bestLabel && (
             <span
               className="ui-chip"
               style={{
@@ -335,7 +364,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                 fontWeight: 700,
               }}
             >
-              ★ {step.bestLabel}
+              ★ {bestLabel}
             </span>
           )}
         </div>
@@ -352,19 +381,30 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
             justifyContent: 'center',
             alignItems: 'flex-end',
             gap: '0.6rem',
-            height: '220px',
+            height: '230px',
             padding: '1.2rem 1rem 2.6rem',
           }}
         >
           {values.map((rawVal, idx) => {
             const numVal = Number(rawVal) || 0;
             const maxVal = Math.max(...values.map((v) => Number(v) || 1), 8);
-            const barHeight = Math.max(14, Math.round((numVal / maxVal) * 140));
-            const waterLevel = step.waterLevels?.[idx] ?? 0;
+            const barHeight = Math.max(8, Math.round((numVal / maxVal) * 140));
+
+            let waterLevel = step.waterLevels?.[idx] ?? step.waterColumns?.[idx] ?? 0;
+            if (
+              !waterLevel &&
+              step.area &&
+              idx >= step.area.left &&
+              idx <= step.area.right &&
+              step.area.height > 0
+            ) {
+              waterLevel = step.area.height;
+            }
             const waterHeight = Math.round((waterLevel / maxVal) * 140);
 
             const isHighlighted = highlights.has(idx);
             const isDone = doneIndices.has(idx);
+            const isBest = bestIndices.has(idx);
             const isDim = dimmed.has(idx);
             const cellPointers = (step.pointers ?? []).filter((p) => p.index === idx);
 
@@ -406,10 +446,10 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                         left: '-5px',
                         right: '-5px',
                         height: `${waterHeight}px`,
-                        background: 'rgb(var(--accent2) / 0.22)',
+                        background: 'rgb(var(--accent2) / 0.24)',
                         borderTop: '1.5px dashed rgb(var(--accent2))',
                         pointerEvents: 'none',
-                        transition: 'height 260ms ease',
+                        transition: 'height 240ms ease',
                       }}
                     />
                   )}
@@ -419,19 +459,23 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                       height: `${barHeight}px`,
                       borderRadius: '6px 6px 2px 2px',
                       border: `2px solid ${
-                        isDone
-                          ? 'rgb(var(--done-stroke))'
-                          : isHighlighted
-                            ? 'rgb(var(--accent))'
-                            : 'rgb(var(--ink) / 0.35)'
+                        isBest
+                          ? 'rgb(var(--gold-stroke))'
+                          : isDone
+                            ? 'rgb(var(--done-stroke))'
+                            : isHighlighted
+                              ? 'rgb(var(--accent))'
+                              : 'rgb(var(--ink) / 0.35)'
                       }`,
-                      background: isDone
-                        ? 'rgb(var(--done-bg))'
-                        : isHighlighted
-                          ? 'rgb(var(--active-bg))'
-                          : 'rgb(var(--idle-bg))',
+                      background: isBest
+                        ? 'rgb(var(--gold-bg))'
+                        : isDone
+                          ? 'rgb(var(--done-bg))'
+                          : isHighlighted
+                            ? 'rgb(var(--active-bg))'
+                            : 'rgb(var(--idle-bg))',
                       zIndex: 2,
-                      transition: 'all 260ms ease',
+                      transition: 'all 240ms ease',
                     }}
                   />
                 </div>
@@ -455,11 +499,11 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                       fontSize: '10px',
                       fontFamily: 'var(--font-mono)',
                       fontWeight: 700,
-                      border: `1.5px solid ${POINTER_COLORS[p.color ?? 'accent']}`,
-                      color: POINTER_COLORS[p.color ?? 'accent'],
+                      border: `1.5px solid ${POINTER_COLORS[p.color ?? 'accent'] ?? 'rgb(var(--accent))'}`,
+                      color: POINTER_COLORS[p.color ?? 'accent'] ?? 'rgb(var(--accent))',
                     }}
                   >
-                    ↑{p.name}
+                    ▲{p.name}
                   </span>
                 ))}
               </div>
@@ -618,9 +662,9 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
                       fontFamily="var(--font-mono)"
                       fontSize="11"
                       fontWeight="700"
-                      fill={POINTER_COLORS[p.color ?? 'accent']}
+                      fill={POINTER_COLORS[p.color ?? 'accent'] ?? 'rgb(var(--accent))'}
                     >
-                      ↑ {p.name}
+                      ▲ {p.name}
                     </text>
                   ))}
                 </g>
@@ -633,7 +677,7 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
       {/* 4. BINARY TREE / TRIE / DECISION TREE VIEW */}
       {renderMode === 'tree' && step.treeNodes && renderTreeSvg(250)}
 
-      {/* 5. HEAP VIEW (DUAL BINARY HEAP TREE + BACKING ARRAY) */}
+      {/* 5. HEAP VIEW */}
       {renderMode === 'heap' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {step.treeNodes && renderTreeSvg(195)}
@@ -870,6 +914,57 @@ export const DsaVisualizer: React.FC<DsaVisualizerProps> = ({ renderMode, step }
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Auxiliary Array Strip (step.aux from chaicode_two_pointers_full.json) */}
+      {step.aux && (
+        <div
+          className="sketch-border-soft"
+          style={{
+            padding: '0.7rem 0.9rem',
+            background: 'rgb(var(--surface-alt))',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '0.45rem',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: 'rgb(var(--mute))',
+              marginRight: '0.35rem',
+            }}
+          >
+            {step.aux.label}:
+          </span>
+          {step.aux.values.length === 0 ? (
+            <span className="ui-chip" style={{ color: 'rgb(var(--mute))' }}>
+              [ empty ]
+            </span>
+          ) : (
+            step.aux.values.map((v, i) => {
+              const isAuxHi = step.aux?.highlights?.includes(i);
+              const isAuxDim = step.aux?.dimmed?.includes(i);
+              return (
+                <span
+                  key={i}
+                  className="ui-chip"
+                  style={{
+                    borderColor: isAuxHi ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.18)',
+                    background: isAuxHi ? 'rgb(var(--active-bg))' : 'rgb(var(--paper))',
+                    opacity: isAuxDim ? 0.4 : 1,
+                    fontWeight: 700,
+                  }}
+                >
+                  {v}
+                </span>
+              );
+            })
+          )}
         </div>
       )}
 

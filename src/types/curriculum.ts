@@ -1,13 +1,13 @@
 export type TrackKind = 'dsa' | 'system-design';
 
-export type Difficulty = 'Easy' | 'Medium' | 'Hard';
+export type Difficulty = 'Intro' | 'Easy' | 'Medium' | 'Hard';
 
 export type DsaRenderMode = 'cells' | 'bars' | 'list' | 'tree' | 'graph' | 'matrix' | 'heap';
 
 export interface PointerBadge {
   name: string;
   index: number;
-  color?: 'accent' | 'blue' | 'green' | 'red' | 'gold';
+  color?: 'accent' | 'blue' | 'green' | 'red' | 'gold' | string;
   lane?: number;
 }
 
@@ -15,12 +15,12 @@ export interface ArrayRegion {
   start: number;
   end: number;
   label?: string;
-  tint?: 'accent' | 'blue' | 'green' | 'gold';
+  tint?: 'accent' | 'blue' | 'green' | 'gold' | 'red' | 'gray' | string;
 }
 
 export interface LinkedListArc {
   from: number;
-  to: number | null; // null means points to NULL
+  to: number | null;
   status?: 'idle' | 'active' | 'done' | 'broken';
   label?: string;
 }
@@ -28,7 +28,7 @@ export interface LinkedListArc {
 export interface TreeNodeData {
   id: string;
   val: string | number;
-  x: number; // 0..100 percentage coordinate
+  x: number;
   y: number;
   leftId?: string;
   rightId?: string;
@@ -40,8 +40,8 @@ export interface TreeNodeData {
 export interface GraphNodeData {
   id: string;
   label: string;
-  x: number; // 0..640 SVG coordinate
-  y: number; // 0..250 SVG coordinate
+  x: number;
+  y: number;
   dist?: string | number;
   state?: 'idle' | 'active' | 'done' | 'gold' | 'dead';
 }
@@ -64,11 +64,42 @@ export interface MatrixData {
   bestCells?: Array<[number, number]>;
 }
 
+export interface DsaBestMarker {
+  indices: number[];
+  label?: string;
+}
+
+export interface DsaAreaOverlay {
+  left: number;
+  right: number;
+  height: number;
+  label?: string;
+}
+
+export interface DsaAuxArray {
+  label: string;
+  values: Array<string | number>;
+  highlights?: number[];
+  dimmed?: number[];
+  pointers?: PointerBadge[];
+}
+
+export interface DsaLevelLine {
+  id: string;
+  y: number;
+  xStart: number;
+  xEnd: number;
+  color?: string;
+  style?: string;
+  label?: string;
+}
+
 export interface DsaStep {
-  codeLine: number;
+  codeLine?: number; // 1-based line number in pseudocode
   narration: string;
-  vars: Array<[string, string | number]>;
+  vars?: Array<[string, string | number]>;
   arrValues?: Array<string | number>;
+  arrIds?: Array<string | number>;
   highlights?: number[];
   reads?: number[];
   dimmed?: number[];
@@ -76,9 +107,14 @@ export interface DsaStep {
   swapPair?: [number, number];
   pointers?: PointerBadge[];
   regions?: ArrayRegion[];
+  best?: DsaBestMarker;
   bestIndices?: number[];
   bestLabel?: string;
+  area?: DsaAreaOverlay;
   waterLevels?: number[];
+  waterColumns?: number[];
+  levels?: DsaLevelLine[];
+  aux?: DsaAuxArray;
   listLinks?: LinkedListArc[];
   treeNodes?: TreeNodeData[];
   graphNodes?: GraphNodeData[];
@@ -117,16 +153,23 @@ export interface DsaProblem {
   id: string;
   patternId: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   kind: 'concept' | 'problem';
-  difficulty: Difficulty;
+  difficulty?: Difficulty;
+  leetcode?: {
+    id: number;
+    slug: string;
+    difficulty: Difficulty;
+  };
   leetcodeId?: number;
-  companies: string[];
+  companies?: string[];
   statement: string;
-  inputDisplay: string;
-  render: DsaRenderMode;
+  input?: Array<string | number>;
+  inputDisplay?: string;
+  render?: DsaRenderMode;
+  colorByValue?: boolean | Record<string, { bg: string; border: string; text: string }>;
   approaches: DsaApproach[];
-  rubric: PracticeRubric;
+  rubric?: PracticeRubric;
 }
 
 export interface DsaPattern {
@@ -137,7 +180,7 @@ export interface DsaPattern {
 }
 
 /* ============================================================================
- * System Design (LLD + HLD) Types — Unified Step-by-Step Visual Engine
+ * System Design (LLD + HLD) Types — Full ChaiCode LLD Schema + HLD Topology
  * ============================================================================ */
 
 export type SdDiagramView = 'class' | 'sequence' | 'state' | 'architecture';
@@ -153,13 +196,13 @@ export type UmlRelationKind =
 export interface UmlClassNode {
   id: string;
   name: string;
-  stereotype?: 'interface' | 'abstract' | 'service' | 'entity' | 'store' | 'controller';
+  stereotype?: 'interface' | 'abstract' | 'service' | 'entity' | 'store' | 'controller' | string;
   x: number;
   y: number;
   w?: number;
   fields?: string[];
   methods?: string[];
-  tint?: 'idle' | 'active' | 'done' | 'dead' | 'gold';
+  tint?: 'idle' | 'active' | 'done' | 'dead' | 'gold' | string;
   badge?: string;
 }
 
@@ -177,7 +220,8 @@ export interface UmlClassEdge {
 export interface SequenceParticipant {
   id: string;
   label: string;
-  kind?: 'actor' | 'service' | 'store' | 'object' | 'queue';
+  kind?: 'actor' | 'service' | 'store' | 'object' | 'queue' | string;
+  tint?: string;
   active?: boolean;
 }
 
@@ -186,7 +230,7 @@ export interface SequenceMessage {
   from: string;
   to: string;
   label: string;
-  kind?: 'call' | 'return' | 'self' | 'create' | 'async';
+  kind?: 'call' | 'return' | 'self' | 'create' | 'async' | string;
   status?: 'active' | 'done' | 'dead';
   note?: string;
 }
@@ -195,10 +239,10 @@ export interface StateOrArchNode {
   id: string;
   label: string;
   sublabel?: string;
-  kind?: 'start' | 'state' | 'final' | 'client' | 'gateway' | 'service' | 'cache' | 'db' | 'queue';
+  kind?: 'start' | 'state' | 'final' | 'client' | 'gateway' | 'service' | 'cache' | 'db' | 'queue' | string;
   x: number;
   y: number;
-  tint?: 'idle' | 'active' | 'done' | 'dead' | 'gold';
+  tint?: 'idle' | 'active' | 'done' | 'dead' | 'gold' | string;
   metrics?: string;
 }
 
@@ -212,11 +256,39 @@ export interface StateOrArchEdge {
   rejected?: boolean;
 }
 
+export interface LldClassDiagramPayload {
+  classes: UmlClassNode[];
+  relations: UmlClassEdge[];
+  shownClassIds?: string[];
+  shownRelIds?: string[];
+  activeIds?: string[];
+  note?: string;
+}
+
+export interface LldSequencePayload {
+  actors: SequenceParticipant[];
+  messages: SequenceMessage[];
+  shownCount?: number;
+  activeIndex?: number;
+  note?: string;
+}
+
+export interface LldStatePayload {
+  nodes: StateOrArchNode[];
+  edges: StateOrArchEdge[];
+  activeId?: string;
+  firedEdgeId?: string;
+  label?: string;
+}
+
 export interface SdStep {
   view: SdDiagramView;
-  codeLine: number;
+  codeLine?: number; // 1-based line index in code[]
   narration: string;
   vars?: Array<[string, string | number]>;
+  classDiagram?: LldClassDiagramPayload;
+  sequence?: LldSequencePayload;
+  state?: LldStatePayload;
   classes?: UmlClassNode[];
   relations?: UmlClassEdge[];
   participants?: SequenceParticipant[];
@@ -236,16 +308,18 @@ export interface SdApproach {
 
 export interface SystemDesignLesson {
   id: string;
-  moduleId: string;
+  moduleId?: string;
+  patternId?: string;
   title: string;
-  subtitle: string;
-  kind: 'concept' | 'lld' | 'hld' | 'case-study';
-  difficulty: Difficulty;
-  companies: string[];
+  subtitle?: string;
+  kind: 'concept' | 'pattern' | 'case-study' | 'lld' | 'hld' | string;
+  difficulty: Difficulty | string;
+  companies?: string[];
   statement: string;
-  theoryMarkdown: string;
+  theory?: string;
+  theoryMarkdown?: string;
   approaches: SdApproach[];
-  rubric: PracticeRubric;
+  rubric?: PracticeRubric;
 }
 
 export interface SystemDesignModule {

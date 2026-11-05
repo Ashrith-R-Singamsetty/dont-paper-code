@@ -358,7 +358,8 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
             }}
           >
             {codeLines.map((line, idx) => {
-              const isActive = idx === activeLine;
+              const isActive =
+                activeLine !== undefined && (idx + 1 === activeLine || (activeLine === 0 && idx === 0));
               return (
                 <div key={idx} className={`code-line ${isActive ? 'code-line-active' : ''}`}>
                   <span
