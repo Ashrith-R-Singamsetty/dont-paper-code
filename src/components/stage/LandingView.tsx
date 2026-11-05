@@ -1,5 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2, Code2, Cpu, Flame, Layers, Play, Search, Sun, Moon } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Code2,
+  Cpu,
+  Flame,
+  Layers,
+  Moon,
+  Play,
+  Search,
+  Sparkles,
+  Sun,
+} from 'lucide-react';
 import { DSA_PATTERNS, DSA_PROBLEMS } from '../../data/dsaProblems';
 import { SYSTEM_DESIGN_LESSONS, SYSTEM_DESIGN_MODULES } from '../../data/systemDesignLessons';
 import { TrackKind } from '../../types/curriculum';
@@ -25,6 +39,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
   solvedIds,
 }) => {
   const [heroStepIdx, setHeroStepIdx] = useState(0);
+  const [activeTab, setActiveTab] = useState<TrackKind>('dsa');
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>('two-pointers');
+  const [quickFilter, setQuickFilter] = useState('');
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -35,6 +52,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
   const heroStep = HERO_STEPS[heroStepIdx];
   const heroArr = [1, 2, 4, 6, 8, 9];
+  const q = quickFilter.trim().toLowerCase();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -45,26 +63,26 @@ export const LandingView: React.FC<LandingViewProps> = ({
           top: 0,
           zIndex: 30,
           borderBottom: '1px solid rgb(var(--ink) / 0.1)',
-          background: 'rgb(var(--paper) / 0.88)',
+          background: 'rgb(var(--paper) / 0.9)',
           backdropFilter: 'blur(8px)',
         }}
       >
         <div
           style={{
-            maxWidth: '1220px',
+            maxWidth: '1180px',
             margin: '0 auto',
-            padding: '0.85rem 1.5rem',
+            padding: '0.7rem 1.5rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '1rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
             <div
               style={{
-                width: '34px',
-                height: '34px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '8px',
                 background: 'rgb(var(--accent))',
                 color: 'rgb(var(--paper))',
@@ -73,51 +91,51 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 justifyContent: 'center',
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 800,
-                fontSize: '14px',
+                fontSize: '13px',
               }}
             >
               !P
             </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-hand)', fontWeight: 800, fontSize: '1.05rem' }}>
+              <div style={{ fontFamily: 'var(--font-hand)', fontWeight: 800, fontSize: '1rem' }}>
                 Don&apos;t Paper Code
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'rgb(var(--mute))' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgb(var(--mute))' }}>
                 Visual DSA · Low-Level Design · Distributed HLD
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
             <button
               type="button"
               onClick={onOpenSearch}
               className="sketch-border-soft"
               style={{
-                padding: '0.4rem 0.75rem',
+                padding: '0.35rem 0.7rem',
                 background: 'rgb(var(--surface))',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 color: 'rgb(var(--mute))',
               }}
             >
-              <Search size={14} />
-              <span>Search problems &amp; designs...</span>
+              <Search size={13} />
+              <span>Jump to problem...</span>
               <span className="ui-chip">⌘K</span>
             </button>
 
             <span
               className="ui-chip"
               style={{
-                padding: '0.35rem 0.65rem',
+                padding: '0.32rem 0.6rem',
                 borderColor: 'rgb(var(--gold-stroke) / 0.55)',
                 background: 'rgb(var(--gold-bg))',
                 fontWeight: 700,
               }}
             >
-              <Flame size={13} style={{ color: 'rgb(var(--accent))' }} />
+              <Flame size={12} style={{ color: 'rgb(var(--accent))' }} />
               {solvedIds.size} Solved
             </span>
 
@@ -127,35 +145,35 @@ export const LandingView: React.FC<LandingViewProps> = ({
               className="sketch-border-soft"
               title="Toggle light/dark theme"
               style={{
-                width: '34px',
-                height: '34px',
+                width: '32px',
+                height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 background: 'rgb(var(--surface))',
               }}
             >
-              {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '1220px', width: '100%', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
-        {/* Hero Split Grid */}
+      <main style={{ maxWidth: '1180px', width: '100%', margin: '0 auto', padding: '1.75rem 1.5rem 2.75rem' }}>
+        {/* Compact Hero Split Grid */}
         <section
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: '2.2rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '1.75rem',
             alignItems: 'center',
-            marginBottom: '3.5rem',
+            marginBottom: '2rem',
           }}
         >
           {/* Left Pitch */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
               <span
                 className="ui-chip"
                 style={{
@@ -165,14 +183,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   fontWeight: 700,
                 }}
               >
-                INTERACTIVE VISUAL LEARNING STUDIO
+                <Sparkles size={11} /> INTERACTIVE VISUAL LEARNING STUDIO
               </span>
+              <span className="ui-chip">18 DSA Patterns · 184 Stages</span>
+              <span className="ui-chip">10 LLD/HLD Modules · 48 Blueprints</span>
             </div>
 
             <h1
               style={{
                 fontFamily: 'var(--font-hand)',
-                fontSize: 'clamp(2.1rem, 4.2vw, 3.25rem)',
+                fontSize: 'clamp(1.85rem, 3.5vw, 2.65rem)',
                 fontWeight: 800,
                 lineHeight: 1.08,
                 letterSpacing: '-0.025em',
@@ -182,41 +202,41 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <span style={{ color: 'rgb(var(--accent))' }}>Don&apos;t Paper Code.</span>
             </h1>
 
-            <p style={{ fontSize: '1.05rem', color: 'rgb(var(--sketch))', lineHeight: 1.65 }}>
+            <p style={{ fontSize: '0.96rem', color: 'rgb(var(--sketch))', lineHeight: 1.58 }}>
               Step through every pointer shift, recursive frame, UML class connector, and distributed Redis Lua lock
-              before writing a single line of syntax. Built with a unified interactive stage for both{' '}
-              <strong>DSA Patterns</strong> and <strong>System Design (LLD + HLD)</strong>.
+              before writing syntax. Built with a unified interactive stage for <strong>DSA Patterns</strong> and{' '}
+              <strong>System Design (LLD + HLD)</strong>.
             </p>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.35rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', marginTop: '0.15rem' }}>
               <button
                 type="button"
                 onClick={() => onLaunchWorkspace('dsa', DSA_PROBLEMS[0].id)}
                 className="cc-btn-solid"
               >
-                <Play size={15} /> Launch DSA Stage
+                <Play size={14} /> Launch DSA Stage
               </button>
               <button
                 type="button"
                 onClick={() => onLaunchWorkspace('system-design', SYSTEM_DESIGN_LESSONS[0].id)}
                 className="cc-btn-outline"
               >
-                <Layers size={15} /> Explore System Design (LLD &amp; HLD)
+                <Layers size={14} /> Explore System Design
               </button>
             </div>
           </div>
 
           {/* Right Live Interactive Preview Card */}
-          <div className="sketch-border" style={{ background: 'rgb(var(--surface))', padding: '1.35rem' }}>
+          <div className="sketch-border" style={{ background: 'rgb(var(--surface))', padding: '1.1rem 1.25rem' }}>
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '1rem',
+                marginBottom: '0.75rem',
               }}
             >
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgb(var(--mute))' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'rgb(var(--mute))' }}>
                 LIVE STAGE PREVIEW · TWO SUM II (target = 9)
               </span>
               <span
@@ -235,8 +255,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
               style={{
                 display: 'flex',
                 justifyContent: 'center',
-                gap: '0.55rem',
-                padding: '1rem 0 1.6rem',
+                gap: '0.5rem',
+                padding: '0.65rem 0 1.15rem',
               }}
             >
               {heroArr.map((val, idx) => {
@@ -256,9 +276,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   >
                     <div
                       style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '9px',
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '8px',
                         border: `2px solid ${
                           heroStep.matched && isActive
                             ? 'rgb(var(--done-stroke))'
@@ -277,6 +297,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                         justifyContent: 'center',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 700,
+                        fontSize: '14px',
                       }}
                     >
                       {val}
@@ -284,9 +305,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
                     {(isL || isR) && (
                       <span
                         style={{
-                          marginTop: '5px',
+                          marginTop: '4px',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: '11px',
+                          fontSize: '10.5px',
                           fontWeight: 700,
                           color: isL ? 'rgb(var(--accent))' : 'rgb(var(--accent2))',
                         }}
@@ -302,10 +323,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
             <div
               className="sketch-border-soft"
               style={{
-                padding: '0.65rem 0.85rem',
+                padding: '0.5rem 0.75rem',
                 background: 'rgb(var(--paper))',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
+                fontSize: '11.5px',
               }}
             >
               {heroStep.note}
@@ -313,120 +334,405 @@ export const LandingView: React.FC<LandingViewProps> = ({
           </div>
         </section>
 
-        {/* Two Core Tracks Section */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.75rem' }}>
-          {/* Track 1: DSA Visual Curriculum */}
-          <div className="sketch-border" style={{ background: 'rgb(var(--surface))', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Code2 size={20} style={{ color: 'rgb(var(--accent))' }} />
-                <h2 style={{ fontFamily: 'var(--font-hand)', fontSize: '1.3rem', fontWeight: 800 }}>
-                  Track 1 · DSA Patterns
-                </h2>
-              </div>
-              <span className="ui-chip">{DSA_PROBLEMS.length} Interactive Stages</span>
+        {/* Compact Curriculum Explorer Header (Tabs + Instant Filter) */}
+        <section>
+          <div
+            className="sketch-border"
+            style={{
+              background: 'rgb(var(--surface))',
+              padding: '0.85rem 1.15rem',
+              marginBottom: '1rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+            }}
+          >
+            {/* Segmented Track Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('dsa');
+                  setExpandedGroupId('two-pointers');
+                }}
+                className="sketch-border-soft"
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  background: activeTab === 'dsa' ? 'rgb(var(--accent))' : 'rgb(var(--paper))',
+                  color: activeTab === 'dsa' ? 'rgb(var(--paper))' : 'rgb(var(--ink))',
+                  borderColor: activeTab === 'dsa' ? 'rgb(var(--accent))' : 'rgb(var(--ink) / 0.15)',
+                }}
+              >
+                <Code2 size={15} />
+                <span>DSA Patterns</span>
+                <span
+                  className="ui-chip"
+                  style={{
+                    background: activeTab === 'dsa' ? 'rgba(255,255,255,0.2)' : 'rgb(var(--surface))',
+                    color: activeTab === 'dsa' ? 'rgb(var(--paper))' : 'rgb(var(--mute))',
+                    borderColor: 'transparent',
+                  }}
+                >
+                  {DSA_PATTERNS.length} patterns · {DSA_PROBLEMS.length} stages
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('system-design');
+                  setExpandedGroupId('lld-intro');
+                }}
+                className="sketch-border-soft"
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  background: activeTab === 'system-design' ? 'rgb(var(--accent2))' : 'rgb(var(--paper))',
+                  color: activeTab === 'system-design' ? 'rgb(var(--paper))' : 'rgb(var(--ink))',
+                  borderColor: activeTab === 'system-design' ? 'rgb(var(--accent2))' : 'rgb(var(--ink) / 0.15)',
+                }}
+              >
+                <Cpu size={15} />
+                <span>System Design (LLD &amp; HLD)</span>
+                <span
+                  className="ui-chip"
+                  style={{
+                    background: activeTab === 'system-design' ? 'rgba(255,255,255,0.2)' : 'rgb(var(--surface))',
+                    color: activeTab === 'system-design' ? 'rgb(var(--paper))' : 'rgb(var(--mute))',
+                    borderColor: 'transparent',
+                  }}
+                >
+                  {SYSTEM_DESIGN_MODULES.length} modules · {SYSTEM_DESIGN_LESSONS.length} lessons
+                </span>
+              </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {DSA_PATTERNS.map((pat) => {
-                const problems = DSA_PROBLEMS.filter((p) => p.patternId === pat.id);
-                return (
-                  <div key={pat.id} className="sketch-border-soft" style={{ padding: '0.9rem', background: 'rgb(var(--paper))' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgb(var(--accent))', fontWeight: 700 }}>
-                      PATTERN {pat.number} · {pat.title.toUpperCase()}
-                    </div>
-                    <p style={{ fontSize: '12.5px', color: 'rgb(var(--mute))', margin: '0.2rem 0 0.65rem' }}>
-                      {pat.tagline}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      {problems.map((prob) => (
-                        <button
-                          key={prob.id}
-                          type="button"
-                          onClick={() => onLaunchWorkspace('dsa', prob.id)}
-                          className="sketch-border-soft"
-                          style={{
-                            padding: '0.5rem 0.7rem',
-                            background: 'rgb(var(--surface))',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            textAlign: 'left',
-                          }}
-                        >
-                          <span style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            {solvedIds.has(prob.id) && (
-                              <CheckCircle2 size={14} style={{ color: 'rgb(var(--done-stroke))' }} />
-                            )}
-                            {prob.title}
-                          </span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '11.5px', color: 'rgb(var(--accent))' }}>
-                            {prob.render ?? 'cells'} <ArrowRight size={13} />
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Inline Quick Filter */}
+            <div
+              className="sketch-border-soft"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.35rem 0.7rem',
+                background: 'rgb(var(--paper))',
+                minWidth: '240px',
+              }}
+            >
+              <Search size={13} style={{ color: 'rgb(var(--mute))' }} />
+              <input
+                type="text"
+                value={quickFilter}
+                onChange={(e) => setQuickFilter(e.target.value)}
+                placeholder={
+                  activeTab === 'dsa' ? 'Filter patterns or problems...' : 'Filter LLD/HLD modules or lessons...'
+                }
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: '12.5px',
+                  width: '100%',
+                }}
+              />
             </div>
           </div>
 
-          {/* Track 2: System Design (LLD + HLD) */}
-          <div className="sketch-border" style={{ background: 'rgb(var(--surface))', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Cpu size={20} style={{ color: 'rgb(var(--accent2))' }} />
-                <h2 style={{ fontFamily: 'var(--font-hand)', fontSize: '1.3rem', fontWeight: 800 }}>
-                  Track 2 · System Design (LLD &amp; HLD)
-                </h2>
-              </div>
-              <span className="ui-chip">{SYSTEM_DESIGN_LESSONS.length} Visual Blueprints</span>
-            </div>
+          {/* Compact 3-Column Bento Grid of Patterns / Modules */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(335px, 1fr))',
+              gap: '0.85rem',
+              alignItems: 'start',
+            }}
+          >
+            {activeTab === 'dsa'
+              ? DSA_PATTERNS.map((pat) => {
+                  const allProblems = DSA_PROBLEMS.filter((p) => p.patternId === pat.id);
+                  const filteredProblems = q
+                    ? allProblems.filter(
+                        (p) =>
+                          p.title.toLowerCase().includes(q) ||
+                          (p.subtitle ?? '').toLowerCase().includes(q) ||
+                          pat.title.toLowerCase().includes(q)
+                      )
+                    : allProblems;
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {SYSTEM_DESIGN_MODULES.map((mod) => {
-                const lessons = SYSTEM_DESIGN_LESSONS.filter((l) => l.moduleId === mod.id);
-                return (
-                  <div key={mod.id} className="sketch-border-soft" style={{ padding: '0.9rem', background: 'rgb(var(--paper))' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgb(var(--accent2))', fontWeight: 700 }}>
-                      MODULE {mod.number} · {mod.title.toUpperCase()}
-                    </div>
-                    <p style={{ fontSize: '12.5px', color: 'rgb(var(--mute))', margin: '0.2rem 0 0.65rem' }}>
-                      {mod.tagline}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      {lessons.map((les) => (
+                  if (q && filteredProblems.length === 0) return null;
+
+                  const isExpanded = Boolean(q) || expandedGroupId === pat.id;
+                  const solvedCount = allProblems.filter((p) => solvedIds.has(p.id)).length;
+                  const previewItems = isExpanded ? filteredProblems : filteredProblems.slice(0, 3);
+
+                  return (
+                    <div
+                      key={pat.id}
+                      className="sketch-border-soft"
+                      style={{
+                        background: 'rgb(var(--surface))',
+                        padding: '0.9rem 1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.55rem',
+                        borderColor: isExpanded ? 'rgb(var(--accent) / 0.55)' : 'rgb(var(--ink) / 0.14)',
+                      }}
+                    >
+                      {/* Card Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span
+                            className="ui-chip"
+                            style={{
+                              color: 'rgb(var(--accent))',
+                              borderColor: 'rgb(var(--accent) / 0.35)',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {pat.number}
+                          </span>
+                          <h3 style={{ fontFamily: 'var(--font-hand)', fontSize: '1.02rem', fontWeight: 800 }}>
+                            {pat.title}
+                          </h3>
+                        </div>
+
+                        <span className="ui-chip" style={{ fontSize: '10.5px' }}>
+                          {solvedCount}/{allProblems.length}
+                        </span>
+                      </div>
+
+                      <p
+                        style={{
+                          fontSize: '12px',
+                          color: 'rgb(var(--mute))',
+                          lineHeight: 1.45,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {pat.tagline}
+                      </p>
+
+                      {/* Compact Problem List (Top 3 or Expanded) */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.15rem' }}>
+                        {previewItems.map((prob) => (
+                          <button
+                            key={prob.id}
+                            type="button"
+                            onClick={() => onLaunchWorkspace('dsa', prob.id)}
+                            style={{
+                              padding: '0.38rem 0.55rem',
+                              borderRadius: '6px',
+                              background: 'rgb(var(--paper))',
+                              border: '1px solid rgb(var(--ink) / 0.09)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '0.4rem',
+                              textAlign: 'left',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {solvedIds.has(prob.id) && (
+                                <CheckCircle2 size={13} style={{ color: 'rgb(var(--done-stroke))', flexShrink: 0 }} />
+                              )}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {prob.title}
+                              </span>
+                            </span>
+                            <ArrowRight size={12} style={{ color: 'rgb(var(--accent))', flexShrink: 0 }} />
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Footer Toggle */}
+                      {filteredProblems.length > 3 && !q && (
                         <button
-                          key={les.id}
                           type="button"
-                          onClick={() => onLaunchWorkspace('system-design', les.id)}
-                          className="sketch-border-soft"
+                          onClick={() => setExpandedGroupId(isExpanded ? null : pat.id)}
                           style={{
-                            padding: '0.5rem 0.7rem',
-                            background: 'rgb(var(--surface))',
+                            marginTop: '0.15rem',
+                            paddingTop: '0.35rem',
+                            borderTop: '1px dashed rgb(var(--ink) / 0.1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            textAlign: 'left',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: 'rgb(var(--accent))',
                           }}
                         >
-                          <span style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            {solvedIds.has(les.id) && (
-                              <CheckCircle2 size={14} style={{ color: 'rgb(var(--done-stroke))' }} />
-                            )}
-                            {les.title}
+                          <span>
+                            {isExpanded ? 'Show fewer' : `View all ${filteredProblems.length} stages`}
                           </span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '11.5px', color: 'rgb(var(--accent2))', textTransform: 'uppercase' }}>
-                            {les.kind} <ArrowRight size={13} />
-                          </span>
+                          {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                         </button>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })
+              : SYSTEM_DESIGN_MODULES.map((mod) => {
+                  const allLessons = SYSTEM_DESIGN_LESSONS.filter((l) => l.moduleId === mod.id);
+                  const filteredLessons = q
+                    ? allLessons.filter(
+                        (l) =>
+                          l.title.toLowerCase().includes(q) ||
+                          (l.subtitle ?? '').toLowerCase().includes(q) ||
+                          mod.title.toLowerCase().includes(q)
+                      )
+                    : allLessons;
+
+                  if (q && filteredLessons.length === 0) return null;
+
+                  const isExpanded = Boolean(q) || expandedGroupId === mod.id;
+                  const solvedCount = allLessons.filter((l) => solvedIds.has(l.id)).length;
+                  const previewItems = isExpanded ? filteredLessons : filteredLessons.slice(0, 3);
+
+                  return (
+                    <div
+                      key={mod.id}
+                      className="sketch-border-soft"
+                      style={{
+                        background: 'rgb(var(--surface))',
+                        padding: '0.9rem 1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.55rem',
+                        borderColor: isExpanded ? 'rgb(var(--accent2) / 0.55)' : 'rgb(var(--ink) / 0.14)',
+                      }}
+                    >
+                      {/* Card Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span
+                            className="ui-chip"
+                            style={{
+                              color: 'rgb(var(--accent2))',
+                              borderColor: 'rgb(var(--accent2) / 0.35)',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {mod.number} · {mod.trackType}
+                          </span>
+                          <h3 style={{ fontFamily: 'var(--font-hand)', fontSize: '1.02rem', fontWeight: 800 }}>
+                            {mod.title}
+                          </h3>
+                        </div>
+
+                        <span className="ui-chip" style={{ fontSize: '10.5px' }}>
+                          {solvedCount}/{allLessons.length}
+                        </span>
+                      </div>
+
+                      <p
+                        style={{
+                          fontSize: '12px',
+                          color: 'rgb(var(--mute))',
+                          lineHeight: 1.45,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {mod.tagline}
+                      </p>
+
+                      {/* Compact Lesson List (Top 3 or Expanded) */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.15rem' }}>
+                        {previewItems.map((les) => (
+                          <button
+                            key={les.id}
+                            type="button"
+                            onClick={() => onLaunchWorkspace('system-design', les.id)}
+                            style={{
+                              padding: '0.38rem 0.55rem',
+                              borderRadius: '6px',
+                              background: 'rgb(var(--paper))',
+                              border: '1px solid rgb(var(--ink) / 0.09)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '0.4rem',
+                              textAlign: 'left',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {solvedIds.has(les.id) && (
+                                <CheckCircle2 size={13} style={{ color: 'rgb(var(--done-stroke))', flexShrink: 0 }} />
+                              )}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {les.title}
+                              </span>
+                            </span>
+                            <ArrowRight size={12} style={{ color: 'rgb(var(--accent2))', flexShrink: 0 }} />
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Footer Toggle */}
+                      {filteredLessons.length > 3 && !q && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedGroupId(isExpanded ? null : mod.id)}
+                          style={{
+                            marginTop: '0.15rem',
+                            paddingTop: '0.35rem',
+                            borderTop: '1px dashed rgb(var(--ink) / 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: 'rgb(var(--accent2))',
+                          }}
+                        >
+                          <span>
+                            {isExpanded ? 'Show fewer' : `View all ${filteredLessons.length} lessons`}
+                          </span>
+                          {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
           </div>
         </section>
       </main>
