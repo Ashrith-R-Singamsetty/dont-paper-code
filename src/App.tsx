@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  Share2,
   Sparkles,
   Sun,
 } from 'lucide-react';
@@ -24,13 +25,53 @@ import { DsaVisualizer } from './components/visualizers/DsaVisualizer';
 import { SystemDesignVisualizer } from './components/visualizers/SystemDesignVisualizer';
 import { PracticePanel } from './components/stage/PracticePanel';
 import { PlaybackBar } from './components/stage/PlaybackBar';
-import { CommandPalette } from './components/stage/CommandPalette';
 import { LandingView } from './components/stage/LandingView';
-import { DesignSystemView } from './components/stage/DesignSystemView';
-import { AptitudeView } from './components/stage/AptitudeView';
 import { MarkdownRenderer } from './components/stage/MarkdownRenderer';
 
+// Code-split heavy views into lazy chunks so initial load remains ultra-fast
+const AptitudeView = React.lazy(() =>
+  import('./components/stage/AptitudeView').then((m) => ({ default: m.AptitudeView }))
+);
+const DesignSystemView = React.lazy(() =>
+  import('./components/stage/DesignSystemView').then((m) => ({ default: m.DesignSystemView }))
+);
+const CommandPalette = React.lazy(() =>
+  import('./components/stage/CommandPalette').then((m) => ({ default: m.CommandPalette }))
+);
+
 type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system' | 'aptitude';
+
+interface QueryParams {
+  step?: number;
+  approach?: number;
+  mode?: 'watch' | 'read';
+}
+
+function parseQueryParams(search: string): QueryParams {
+  const params = new URLSearchParams(search);
+  const stepVal = params.get('step');
+  const approachVal = params.get('approach');
+  const modeVal = params.get('mode');
+
+  let step: number | undefined;
+  if (stepVal !== null) {
+    const parsed = parseInt(stepVal, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      step = parsed - 1; // Convert 1-based URL parameter to 0-based index
+    }
+  }
+
+  let approach: number | undefined;
+  if (approachVal !== null) {
+    const parsed = parseInt(approachVal, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      approach = parsed - 1; // Convert 1-based URL parameter to 0-based index
+    }
+  }
+
+  const mode = modeVal === 'read' || modeVal === 'watch' ? modeVal : undefined;
+  return { step, approach, mode };
+}
 
 function parseLocationPath(pathname: string): {
   route: PageRoute;
@@ -65,6 +106,7 @@ function parseLocationPath(pathname: string): {
 
 export const App: React.FC = () => {
   const initialParsed = useMemo(() => parseLocationPath(window.location.pathname), []);
+  const initialQuery = useMemo(() => parseQueryParams(window.location.search), []);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('dpc:theme') as 'light' | 'dark') || 'dark';
@@ -80,14 +122,15 @@ export const App: React.FC = () => {
     initialParsed.sdId ?? SYSTEM_DESIGN_LESSONS[0].id
   );
 
-  const [approachIdx, setApproachIdx] = useState(0);
-  const [stepIdx, setStepIdx] = useState(0);
+  const [approachIdx, setApproachIdx] = useState(initialQuery.approach ?? 0);
+  const [stepIdx, setStepIdx] = useState(initialQuery.step ?? 0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
 
-  const [sdMode, setSdMode] = useState<'watch' | 'read'>('watch');
+  const [sdMode, setSdMode] = useState<'watch' | 'read'>(initialQuery.mode ?? 'watch');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [hideSolutions, setHideSolutions] = useState<boolean>(() => {
     return localStorage.getItem('dpc:hideSolutions') === '1';
@@ -123,6 +166,23 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleCopyShareLink = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedShareLink(true);
+      setTimeout(() => setCopiedShareLink(false), 2000);
+    } catch {
+      const input = document.createElement('input');
+      input.value = window.location.href;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setCopiedShareLink(true);
+      setTimeout(() => setCopiedShareLink(false), 2000);
+    }
+  };
+
   const toggleSidebarGroup = (groupId: string) => {
     setCollapsedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
   };
@@ -143,11 +203,13 @@ export const App: React.FC = () => {
   const totalSteps = currentApproach.steps.length;
   const safeStepIdx = Math.min(stepIdx, Math.max(0, totalSteps - 1));
 
-  const navigateToPath = (path: string) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, '', path);
+  const navigateToPath = (pathWithSearch: string) => {
+    if (`${window.location.pathname}${window.location.search}` !== pathWithSearch) {
+      window.history.pushState({}, '', pathWithSearch);
     }
+    const [path, search] = pathWithSearch.split('?');
     const parsed = parseLocationPath(path);
+    const q = parseQueryParams(search ? `?${search}` : '');
     setViewMode(parsed.route);
     if (parsed.route === 'dsa') {
       setTrack('dsa');
@@ -156,31 +218,29 @@ export const App: React.FC = () => {
       setTrack('system-design');
       if (parsed.sdId) setSelectedSdId(parsed.sdId);
     }
-    setApproachIdx(0);
-    setStepIdx(0);
+    setApproachIdx(q.approach ?? 0);
+    setStepIdx(q.step ?? 0);
+    setSdMode(q.mode ?? 'watch');
     setPlaying(false);
-    setSdMode('watch');
   };
 
-  const selectItem = (targetTrack: TrackKind, id: string) => {
+  const selectItem = (targetTrack: TrackKind, id: string, targetStep = 0, targetApproach = 0) => {
     setTrack(targetTrack);
+    const nextPath = targetTrack === 'dsa' ? `/dsa/${id}` : `/system-design/${id}`;
+    const nextSearch = `?step=${targetStep + 1}${targetApproach > 0 ? `&approach=${targetApproach + 1}` : ''}`;
+    const fullUrl = `${nextPath}${nextSearch}`;
+    if (`${window.location.pathname}${window.location.search}` !== fullUrl) {
+      window.history.pushState({}, '', fullUrl);
+    }
     if (targetTrack === 'dsa') {
       setSelectedDsaId(id);
       setViewMode('dsa');
-      const nextPath = `/dsa/${id}`;
-      if (window.location.pathname !== nextPath) {
-        window.history.pushState({}, '', nextPath);
-      }
     } else {
       setSelectedSdId(id);
       setViewMode('system-design');
-      const nextPath = `/system-design/${id}`;
-      if (window.location.pathname !== nextPath) {
-        window.history.pushState({}, '', nextPath);
-      }
     }
-    setApproachIdx(0);
-    setStepIdx(0);
+    setApproachIdx(targetApproach);
+    setStepIdx(targetStep);
     setPlaying(false);
     setSdMode('watch');
   };
@@ -189,6 +249,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const onPopState = () => {
       const parsed = parseLocationPath(window.location.pathname);
+      const q = parseQueryParams(window.location.search);
       setViewMode(parsed.route);
       if (parsed.route === 'dsa') {
         setTrack('dsa');
@@ -197,13 +258,38 @@ export const App: React.FC = () => {
         setTrack('system-design');
         if (parsed.sdId) setSelectedSdId(parsed.sdId);
       }
-      setApproachIdx(0);
-      setStepIdx(0);
+      setApproachIdx(q.approach ?? 0);
+      setStepIdx(q.step ?? 0);
+      setSdMode(q.mode ?? 'watch');
       setPlaying(false);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
+  // Synchronize active step, approach, and mode to URL query parameters in real time
+  useEffect(() => {
+    if (viewMode !== 'dsa' && viewMode !== 'system-design') return;
+
+    const currentPath = window.location.pathname;
+    const params = new URLSearchParams();
+
+    // 1-based index for clean, human-readable URLs: ?step=1, ?step=2...
+    params.set('step', String(safeStepIdx + 1));
+    if (safeApproachIdx > 0) {
+      params.set('approach', String(safeApproachIdx + 1));
+    }
+    if (track === 'system-design' && sdMode === 'read') {
+      params.set('mode', 'read');
+    }
+
+    const newSearch = `?${params.toString()}`;
+    const newUrl = `${currentPath}${newSearch}`;
+
+    if (`${window.location.pathname}${window.location.search}` !== newUrl) {
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [viewMode, safeStepIdx, safeApproachIdx, sdMode, track, selectedDsaId, selectedSdId]);
 
   // Auto-advance timer when playing
   useEffect(() => {
@@ -254,7 +340,23 @@ export const App: React.FC = () => {
 
   if (viewMode === 'aptitude') {
     return (
-      <>
+      <React.Suspense
+        fallback={
+          <div
+            style={{
+              height: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+              color: 'rgb(var(--mute))',
+            }}
+          >
+            Loading Aptitude Studio...
+          </div>
+        }
+      >
         <AptitudeView
           theme={theme}
           onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
@@ -263,29 +365,49 @@ export const App: React.FC = () => {
           onNavigateSystemDesign={() => navigateToPath('/system-design')}
           onNavigateDesignSystem={() => navigateToPath('/design-system')}
         />
-        <CommandPalette
-          open={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onSelect={selectItem}
-        />
-      </>
+        {searchOpen && (
+          <CommandPalette
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onSelect={selectItem}
+          />
+        )}
+      </React.Suspense>
     );
   }
 
   if (viewMode === 'design-system') {
     return (
-      <>
+      <React.Suspense
+        fallback={
+          <div
+            style={{
+              height: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+              color: 'rgb(var(--mute))',
+            }}
+          >
+            Loading Design System...
+          </div>
+        }
+      >
         <DesignSystemView
           theme={theme}
           onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
           onNavigate={navigateToPath}
         />
-        <CommandPalette
-          open={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onSelect={selectItem}
-        />
-      </>
+        {searchOpen && (
+          <CommandPalette
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onSelect={selectItem}
+          />
+        )}
+      </React.Suspense>
     );
   }
 
@@ -300,11 +422,15 @@ export const App: React.FC = () => {
           onNavigate={navigateToPath}
           solvedIds={solvedIds}
         />
-        <CommandPalette
-          open={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onSelect={selectItem}
-        />
+        <React.Suspense fallback={null}>
+          {searchOpen && (
+            <CommandPalette
+              open={searchOpen}
+              onClose={() => setSearchOpen(false)}
+              onSelect={selectItem}
+            />
+          )}
+        </React.Suspense>
       </>
     );
   }
@@ -880,7 +1006,7 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Top-Right Step Pill + Watch/Read Segmented Pill */}
+            {/* Top-Right Step Pill + Share Button + Watch/Read Segmented Pill */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <div
                 className="sketch-border-soft"
@@ -898,6 +1024,39 @@ export const App: React.FC = () => {
                   {safeStepIdx + 1}/{totalSteps}
                 </div>
               </div>
+
+              {/* Share Step Link Button */}
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className="sketch-border-soft"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.35rem 0.65rem',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: copiedShareLink ? 'rgb(var(--done-stroke) / 0.12)' : 'rgb(var(--surface))',
+                  color: copiedShareLink ? 'rgb(var(--done-stroke))' : 'rgb(var(--sketch))',
+                  borderColor: copiedShareLink ? 'rgb(var(--done-stroke) / 0.4)' : 'rgb(var(--ink) / 0.12)',
+                  transition: 'all 150ms ease',
+                }}
+                title="Copy shareable link with exact step, approach and mode"
+              >
+                {copiedShareLink ? (
+                  <>
+                    <CheckCircle2 size={13} style={{ color: 'rgb(var(--done-stroke))' }} />
+                    <span>Link copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={13} />
+                    <span>Share step</span>
+                  </>
+                )}
+              </button>
 
               {track === 'system-design' && (
                 <div
@@ -1150,12 +1309,16 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Global ⌘K Command Palette */}
-      <CommandPalette
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onSelect={selectItem}
-      />
+      {/* Global ⌘K Command Palette (Lazy loaded on demand) */}
+      <React.Suspense fallback={null}>
+        {searchOpen && (
+          <CommandPalette
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onSelect={selectItem}
+          />
+        )}
+      </React.Suspense>
     </div>
   );
 };
