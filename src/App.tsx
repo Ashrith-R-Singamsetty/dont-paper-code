@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   Flame,
+  FlaskConical,
   Home,
   Moon,
   PanelLeftClose,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { DSA_PATTERNS, DSA_PROBLEMS } from './data/dsaProblems';
 import { SYSTEM_DESIGN_LESSONS, SYSTEM_DESIGN_MODULES } from './data/systemDesignLessons';
-import { TrackKind } from './types/curriculum';
+import { DsaApproach, TrackKind } from './types/curriculum';
 import { DsaVisualizer } from './components/visualizers/DsaVisualizer';
 import { SystemDesignVisualizer } from './components/visualizers/SystemDesignVisualizer';
 import { PracticePanel } from './components/stage/PracticePanel';
@@ -41,6 +42,15 @@ const CommandPalette = React.lazy(() =>
 );
 const ProgressDashboard = React.lazy(() =>
   import('./components/stage/ProgressDashboard').then((m) => ({ default: m.ProgressDashboard }))
+);
+const CustomInputModal = React.lazy(() =>
+  import('./components/stage/CustomInputModal').then((m) => ({ default: m.CustomInputModal }))
+);
+const MockInterviewOverlay = React.lazy(() =>
+  import('./components/stage/MockInterviewOverlay').then((m) => ({ default: m.MockInterviewOverlay }))
+);
+const PwaBanner = React.lazy(() =>
+  import('./components/stage/PwaBanner').then((m) => ({ default: m.PwaBanner }))
 );
 
 type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system' | 'aptitude' | 'progress';
@@ -139,6 +149,9 @@ export const App: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [highlightedVar, setHighlightedVar] = useState<string | null>(null);
+  const [customInputOpen, setCustomInputOpen] = useState(false);
+  const [customApproach, setCustomApproach] = useState<DsaApproach | null>(null);
+  const [mockInterviewActive, setMockInterviewActive] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [hideSolutions, setHideSolutions] = useState<boolean>(() => {
     return localStorage.getItem('dpc:hideSolutions') === '1';
@@ -205,7 +218,12 @@ export const App: React.FC = () => {
     [selectedSdId]
   );
 
-  const approaches = track === 'dsa' ? currentDsa.approaches : currentSd.approaches;
+  const approaches = useMemo(() => {
+    if (track === 'dsa') {
+      return customApproach ? [customApproach, ...currentDsa.approaches] : currentDsa.approaches;
+    }
+    return currentSd.approaches;
+  }, [track, customApproach, currentDsa.approaches, currentSd.approaches]);
   const safeApproachIdx = Math.min(approachIdx, approaches.length - 1);
   const currentApproach = approaches[safeApproachIdx];
   const totalSteps = currentApproach.steps.length;
@@ -313,10 +331,16 @@ export const App: React.FC = () => {
     return () => window.clearInterval(timer);
   }, [playing, speed, totalSteps]);
 
-  // Clear variable trace highlight when switching problem, module, or approach
+  // Clear variable trace highlight, custom test case, and mock interview when switching problem or module
   useEffect(() => {
     setHighlightedVar(null);
-  }, [selectedDsaId, selectedSdId, approachIdx]);
+    setCustomApproach(null);
+    setMockInterviewActive(false);
+  }, [selectedDsaId, selectedSdId]);
+
+  useEffect(() => {
+    setHighlightedVar(null);
+  }, [approachIdx]);
 
   // Global keyboard shortcuts (⌘K, Space, ←, →, Home)
   useEffect(() => {
@@ -385,6 +409,7 @@ export const App: React.FC = () => {
             onSelect={selectItem}
           />
         )}
+        <PwaBanner />
       </React.Suspense>
     );
   }
@@ -420,6 +445,7 @@ export const App: React.FC = () => {
             onSelect={selectItem}
           />
         )}
+        <PwaBanner />
       </React.Suspense>
     );
   }
@@ -458,6 +484,7 @@ export const App: React.FC = () => {
             onSelect={selectItem}
           />
         )}
+        <PwaBanner />
       </React.Suspense>
     );
   }
@@ -481,6 +508,7 @@ export const App: React.FC = () => {
               onSelect={selectItem}
             />
           )}
+          <PwaBanner />
         </React.Suspense>
       </>
     );
@@ -861,6 +889,29 @@ export const App: React.FC = () => {
               <span>Progress</span>
             </button>
 
+            {track === 'dsa' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMockInterviewActive((m) => !m);
+                  setPlaying(false);
+                }}
+                className="nav-link"
+                style={{
+                  padding: '0.25rem 0.6rem',
+                  fontSize: '12px',
+                  color: mockInterviewActive ? 'rgb(var(--accent))' : undefined,
+                  fontWeight: mockInterviewActive ? 700 : undefined,
+                  background: mockInterviewActive ? 'rgb(var(--accent) / 0.12)' : undefined,
+                  borderColor: mockInterviewActive ? 'rgb(var(--accent) / 0.45)' : undefined,
+                }}
+                title="Mock Interview Mode: Timer + Hidden Narration + State & Pointer Shift Predictions"
+              >
+                <Sparkles size={13} style={{ color: 'rgb(var(--accent))' }} />
+                <span>{mockInterviewActive ? 'Exit Interview' : 'Mock Interview'}</span>
+              </button>
+            )}
+
             <div style={{ width: '1px', height: '16px', background: 'rgb(var(--ink) / 0.1)', margin: '0 2px' }} />
 
             <button
@@ -1076,6 +1127,28 @@ export const App: React.FC = () => {
                     );
                   })}
                 </div>
+
+                {track === 'dsa' && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomInputOpen(true)}
+                    className="ui-chip"
+                    style={{
+                      padding: '0.22rem 0.55rem',
+                      fontSize: '11px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      color: customApproach ? 'rgb(var(--accent))' : undefined,
+                      borderColor: customApproach ? 'rgb(var(--accent) / 0.5)' : undefined,
+                      background: customApproach ? 'rgb(var(--accent) / 0.1)' : undefined,
+                    }}
+                    title="Type custom array or string and step through the algorithm"
+                  >
+                    <FlaskConical size={12} style={{ color: 'rgb(var(--accent))' }} />
+                    <span>{customApproach ? 'Custom Test Case Active' : 'Custom Input'}</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1200,6 +1273,22 @@ export const App: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+              {mockInterviewActive && (
+                <React.Suspense fallback={null}>
+                  <MockInterviewOverlay
+                    active={mockInterviewActive}
+                    onExit={() => setMockInterviewActive(false)}
+                    currentStepIdx={safeStepIdx}
+                    totalSteps={totalSteps}
+                    currentStep={currentApproach.steps[safeStepIdx]}
+                    nextStep={currentApproach.steps[safeStepIdx + 1]}
+                    onAdvanceStep={() => setStepIdx((s) => Math.min(totalSteps - 1, s + 1))}
+                    onLogSpacedRepetition={() => handleMarkSolved(activeItemId)}
+                    problemTitle={activeTitle}
+                  />
+                </React.Suspense>
+              )}
+
               {/* CENTER SPLIT: Diagram Canvas on Left + Code & STATE Box on Right */}
               <div className="stage-split">
                 {/* LEFT: Visual Diagram Stage */}
@@ -1409,7 +1498,9 @@ export const App: React.FC = () => {
               >
                 <Sparkles size={16} style={{ color: 'rgb(var(--accent))', flexShrink: 0 }} />
                 <p style={{ fontSize: '13.5px', lineHeight: 1.55, color: 'rgb(var(--ink))' }}>
-                  {currentNarration}
+                  {mockInterviewActive && safeStepIdx < totalSteps - 1
+                    ? '✦ Narration hidden in Mock Interview Mode — Predict the next state and pointer transition above.'
+                    : currentNarration}
                 </p>
               </div>
 
@@ -1491,7 +1582,7 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Global ⌘K Command Palette (Lazy loaded on demand) */}
+      {/* Global ⌘K Command Palette, Custom Input Modal, & PWA Offline/Install Banner (Lazy loaded on demand) */}
       <React.Suspense fallback={null}>
         {searchOpen && (
           <CommandPalette
@@ -1500,6 +1591,26 @@ export const App: React.FC = () => {
             onSelect={selectItem}
           />
         )}
+        {customInputOpen && (
+          <CustomInputModal
+            open={customInputOpen}
+            onClose={() => setCustomInputOpen(false)}
+            problemId={currentDsa.id}
+            patternId={currentDsa.patternId}
+            onApplyCustomApproach={(app) => {
+              setCustomApproach(app);
+              setApproachIdx(0);
+              setStepIdx(0);
+            }}
+            onResetDefault={() => {
+              setCustomApproach(null);
+              setApproachIdx(0);
+              setStepIdx(0);
+            }}
+            isCustomActive={Boolean(customApproach)}
+          />
+        )}
+        <PwaBanner />
       </React.Suspense>
     </div>
   );

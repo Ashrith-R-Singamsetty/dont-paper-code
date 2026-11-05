@@ -8,6 +8,7 @@ import {
   Code2,
   Cpu,
   Flame,
+  FlaskConical,
   Layers,
   Moon,
   Play,
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Sun,
   Trophy,
+  WifiOff,
   X,
 } from 'lucide-react';
 import { DSA_PATTERNS, DSA_PROBLEMS } from '../../data/dsaProblems';
@@ -324,6 +326,19 @@ export const LandingView: React.FC<LandingViewProps> = ({
               >
                 <Layers size={14} /> Explore System Design
               </button>
+            </div>
+
+            {/* Competitive Moats Feature Badges */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', marginTop: '0.15rem' }}>
+              <span style={{ fontSize: '11px', color: 'rgb(var(--mute))', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <FlaskConical size={12} style={{ color: 'rgb(var(--accent))' }} /> Custom Input Generator
+              </span>
+              <span style={{ fontSize: '11px', color: 'rgb(var(--mute))', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Sparkles size={12} style={{ color: 'rgb(var(--accent))' }} /> Mock Interview Mode
+              </span>
+              <span style={{ fontSize: '11px', color: 'rgb(var(--mute))', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <WifiOff size={12} style={{ color: 'rgb(var(--accent))' }} /> Offline PWA Studio
+              </span>
             </div>
           </div>
 
