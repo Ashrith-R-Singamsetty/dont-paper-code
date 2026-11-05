@@ -27,9 +27,10 @@ import { PlaybackBar } from './components/stage/PlaybackBar';
 import { CommandPalette } from './components/stage/CommandPalette';
 import { LandingView } from './components/stage/LandingView';
 import { DesignSystemView } from './components/stage/DesignSystemView';
+import { AptitudeView } from './components/stage/AptitudeView';
 import { MarkdownRenderer } from './components/stage/MarkdownRenderer';
 
-type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system';
+type PageRoute = 'landing' | 'dsa' | 'system-design' | 'design-system' | 'aptitude';
 
 function parseLocationPath(pathname: string): {
   route: PageRoute;
@@ -39,6 +40,9 @@ function parseLocationPath(pathname: string): {
   const clean = pathname.replace(/\/+$/, '') || '/';
   if (clean === '/design-system') {
     return { route: 'design-system' };
+  }
+  if (clean === '/aptitude' || clean.startsWith('/aptitude/')) {
+    return { route: 'aptitude' };
   }
   if (clean === '/dsa' || clean.startsWith('/dsa/')) {
     const slug = clean.slice('/dsa/'.length);
@@ -247,6 +251,26 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [viewMode, totalSteps]);
+
+  if (viewMode === 'aptitude') {
+    return (
+      <>
+        <AptitudeView
+          theme={theme}
+          onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+          onNavigateHome={() => navigateToPath('/')}
+          onNavigateDSA={() => navigateToPath('/dsa')}
+          onNavigateSystemDesign={() => navigateToPath('/system-design')}
+          onNavigateDesignSystem={() => navigateToPath('/design-system')}
+        />
+        <CommandPalette
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onSelect={selectItem}
+        />
+      </>
+    );
+  }
 
   if (viewMode === 'design-system') {
     return (
@@ -627,6 +651,15 @@ export const App: React.FC = () => {
               style={{ padding: '0.22rem 0.55rem' }}
             >
               {track === 'dsa' ? '→ /system-design' : '→ /dsa'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateToPath('/aptitude')}
+              className="ui-chip"
+              style={{ padding: '0.22rem 0.55rem' }}
+            >
+              /aptitude
             </button>
 
             <button

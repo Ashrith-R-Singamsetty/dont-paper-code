@@ -127,6 +127,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => onNavigate('/aptitude')}
+              className="ui-chip"
+              style={{ padding: '0.32rem 0.65rem', fontWeight: 600 }}
+            >
+              <Sparkles size={12} style={{ color: 'rgb(var(--accent))' }} /> /aptitude
+            </button>
+            <button
+              type="button"
               onClick={() => onNavigate('/design-system')}
               className="ui-chip"
               style={{ padding: '0.32rem 0.65rem', fontWeight: 600 }}

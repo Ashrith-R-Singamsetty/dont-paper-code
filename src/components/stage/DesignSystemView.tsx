@@ -107,6 +107,14 @@ export const DesignSystemView: React.FC<DesignSystemViewProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => onNavigate('/aptitude')}
+              className="ui-chip"
+              style={{ padding: '0.32rem 0.7rem' }}
+            >
+              <Sparkles size={13} style={{ color: 'rgb(var(--accent))' }} /> /aptitude
+            </button>
+            <button
+              type="button"
               onClick={onToggleTheme}
               className="sketch-border-soft"
               style={{
