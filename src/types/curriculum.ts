@@ -2,7 +2,7 @@ export type TrackKind = 'dsa' | 'system-design';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
-export type DsaRenderMode = 'cells' | 'bars' | 'list' | 'tree' | 'graph';
+export type DsaRenderMode = 'cells' | 'bars' | 'list' | 'tree' | 'graph' | 'matrix' | 'heap';
 
 export interface PointerBadge {
   name: string;
@@ -28,10 +28,11 @@ export interface LinkedListArc {
 export interface TreeNodeData {
   id: string;
   val: string | number;
-  x: number; // 0..100 percentage or SVG coordinate
+  x: number; // 0..100 percentage coordinate
   y: number;
   leftId?: string;
   rightId?: string;
+  childrenIds?: string[];
   state?: 'idle' | 'active' | 'done' | 'dead' | 'gold';
   badge?: string;
 }
@@ -39,10 +40,10 @@ export interface TreeNodeData {
 export interface GraphNodeData {
   id: string;
   label: string;
-  x: number;
-  y: number;
+  x: number; // 0..640 SVG coordinate
+  y: number; // 0..250 SVG coordinate
   dist?: string | number;
-  state?: 'idle' | 'active' | 'done' | 'gold';
+  state?: 'idle' | 'active' | 'done' | 'gold' | 'dead';
 }
 
 export interface GraphEdgeData {
@@ -50,7 +51,17 @@ export interface GraphEdgeData {
   to: string;
   weight?: number | string;
   directed?: boolean;
-  state?: 'idle' | 'active' | 'done';
+  state?: 'idle' | 'active' | 'done' | 'dead';
+}
+
+export interface MatrixData {
+  rowLabels?: string[];
+  colLabels?: string[];
+  grid: Array<Array<string | number>>;
+  activeCells?: Array<[number, number]>;
+  doneCells?: Array<[number, number]>;
+  readCells?: Array<[number, number]>;
+  bestCells?: Array<[number, number]>;
 }
 
 export interface DsaStep {
@@ -67,11 +78,12 @@ export interface DsaStep {
   regions?: ArrayRegion[];
   bestIndices?: number[];
   bestLabel?: string;
-  waterLevels?: number[]; // For Container With Most Water / Trapping Rain Water
+  waterLevels?: number[];
   listLinks?: LinkedListArc[];
   treeNodes?: TreeNodeData[];
   graphNodes?: GraphNodeData[];
   graphEdges?: GraphEdgeData[];
+  matrix?: MatrixData;
   auxLabel?: string;
   auxItems?: Array<string | number>;
   callStack?: string[];
@@ -125,7 +137,7 @@ export interface DsaPattern {
 }
 
 /* ============================================================================
- * System Design (LLD + HLD) Types — Same Step-by-Step Visual Engine Style
+ * System Design (LLD + HLD) Types — Unified Step-by-Step Visual Engine
  * ============================================================================ */
 
 export type SdDiagramView = 'class' | 'sequence' | 'state' | 'architecture';
@@ -141,9 +153,9 @@ export type UmlRelationKind =
 export interface UmlClassNode {
   id: string;
   name: string;
-  stereotype?: 'interface' | 'abstract' | 'service' | 'entity' | 'store';
-  x: number; // 0..1000 canvas coordinate
-  y: number; // 0..560 canvas coordinate
+  stereotype?: 'interface' | 'abstract' | 'service' | 'entity' | 'store' | 'controller';
+  x: number;
+  y: number;
   w?: number;
   fields?: string[];
   methods?: string[];
@@ -165,7 +177,7 @@ export interface UmlClassEdge {
 export interface SequenceParticipant {
   id: string;
   label: string;
-  kind?: 'actor' | 'service' | 'store' | 'object';
+  kind?: 'actor' | 'service' | 'store' | 'object' | 'queue';
   active?: boolean;
 }
 
@@ -241,4 +253,5 @@ export interface SystemDesignModule {
   number: string;
   title: string;
   tagline: string;
+  trackType: 'LLD' | 'HLD';
 }

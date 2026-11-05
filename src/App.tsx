@@ -26,6 +26,7 @@ import { PracticePanel } from './components/stage/PracticePanel';
 import { PlaybackBar } from './components/stage/PlaybackBar';
 import { CommandPalette } from './components/stage/CommandPalette';
 import { LandingView } from './components/stage/LandingView';
+import { MarkdownRenderer } from './components/stage/MarkdownRenderer';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -678,16 +679,7 @@ export const App: React.FC = () => {
               >
                 SYSTEM DESIGN ARCHITECTURE NOTES · {currentSd.title.toUpperCase()}
               </div>
-              <pre
-                style={{
-                  fontFamily: 'var(--font-sketch)',
-                  fontSize: '14px',
-                  whiteSpace: 'pre-wrap',
-                  color: 'rgb(var(--ink))',
-                }}
-              >
-                {currentSd.theoryMarkdown}
-              </pre>
+              <MarkdownRenderer markdown={currentSd.theoryMarkdown} />
             </div>
           ) : (
             <div className="stage-split">
