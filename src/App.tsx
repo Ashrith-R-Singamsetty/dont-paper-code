@@ -474,13 +474,18 @@ export const App: React.FC = () => {
         {/* Top Breadcrumb Bar (Matches "LLD Visual › Getting started" + right utility bar) */}
         <header
           style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 20,
             padding: '0.55rem 1.5rem',
             borderBottom: '1px solid rgb(var(--ink) / 0.08)',
-            background: 'rgb(var(--paper))',
+            background: 'rgb(var(--paper) / 0.92)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '0.75rem',
+            flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '12.5px' }}>
@@ -559,7 +564,7 @@ export const App: React.FC = () => {
         </header>
 
         {/* Stage Content Container */}
-        <div style={{ padding: '1.35rem 1.75rem', maxWidth: '1380px', width: '100%', margin: '0 auto', flex: 1 }}>
+        <div style={{ padding: '0.9rem 1.75rem 1.1rem', maxWidth: '1380px', width: '100%', margin: '0 auto', flex: 1 }}>
           {/* Header Section (Matches screenshot: Category tag, Title, Description, ASKED AT, Approach row on left; step 1/13 + Watch/Read pill on right) */}
           <div
             style={{
@@ -567,8 +572,8 @@ export const App: React.FC = () => {
               flexWrap: 'wrap',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
-              gap: '1rem',
-              marginBottom: '1.1rem',
+              gap: '0.75rem',
+              marginBottom: '0.65rem',
             }}
           >
             <div style={{ maxWidth: '780px' }}>

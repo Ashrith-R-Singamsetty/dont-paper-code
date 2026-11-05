@@ -26,12 +26,12 @@
 
 :root[data-theme='dark'] {
   --paper: 10 10 10;
-  --surface: 23 23 23;
-  --surface-alt: 18 18 18;
-  --ink: 250 250 250;
+  --surface: 20 20 20;
+  --surface-alt: 15 15 15;
+  --ink: 245 245 245;
   --sketch: 163 163 163;
-  --mute: 140 140 140;
-  --accent: 255 237 213;
+  --mute: 135 135 135;
+  --accent: 234 88 12;
   --accent2: 127 169 221;
 
   --idle-bg: 27 26 25;
@@ -239,23 +239,22 @@ input[type='range'].scrubber::-webkit-slider-thumb:hover {
   background: rgb(var(--ink) / 0.32);
 }
 
-/* Workspace Layout Grid */
+/* Workspace Layout Grid — Fixed 100vh Non-Scrolling Studio Viewport */
 .app-shell {
   display: flex;
-  min-height: 100vh;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 .sidebar {
-  width: 280px;
+  width: 248px;
   flex-shrink: 0;
-  border-right: 1px solid rgb(var(--ink) / 0.12);
-  background: rgb(var(--surface));
+  border-right: 1px solid rgb(var(--ink) / 0.1);
+  background: rgb(var(--paper));
   display: flex;
   flex-direction: column;
   height: 100vh;
-  position: sticky;
-  top: 0;
   overflow: hidden;
   transition: width 200ms ease;
 }
@@ -268,15 +267,17 @@ input[type='range'].scrubber::-webkit-slider-thumb:hover {
 .stage-main {
   flex: 1;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
 }
 
 .stage-split {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.95fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.9fr);
+  gap: 1.15rem;
   flex: 1;
   align-items: start;
 }

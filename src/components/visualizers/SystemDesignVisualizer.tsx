@@ -1,9 +1,126 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { SdStep, UmlClassNode } from '../../types/curriculum';
 
 interface SystemDesignVisualizerProps {
   step: SdStep;
 }
+
+const InteractiveDiagramCanvas: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    setDragging(true);
+    dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setPan({
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y,
+    });
+  };
+
+  const stopDrag = () => setDragging(false);
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      setScale((s) => Math.min(2, Math.max(0.6, Number((s + delta).toFixed(2)))));
+    } else {
+      setPan((p) => ({ x: p.x - e.deltaX * 0.6, y: p.y - e.deltaY * 0.6 }));
+    }
+  };
+
+  const resetView = () => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+      onWheel={handleWheel}
+      style={{
+        position: 'relative',
+        width: '100%',
+        minHeight: '330px',
+        maxHeight: '420px',
+        overflow: 'auto',
+        cursor: dragging ? 'grabbing' : 'grab',
+        userSelect: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '10px',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+          transformOrigin: 'center center',
+          transition: dragging ? 'none' : 'transform 120ms ease-out',
+        }}
+      >
+        {children}
+      </div>
+
+      {/* Floating Zoom / Pan Reset Controls */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          right: '8px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '3px 6px',
+          borderRadius: '6px',
+          background: 'rgb(var(--surface) / 0.88)',
+          border: '1px solid rgb(var(--ink) / 0.14)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '10.5px',
+          color: 'rgb(var(--mute))',
+          zIndex: 5,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setScale((s) => Math.max(0.6, Number((s - 0.15).toFixed(2))))}
+          style={{ padding: '0 4px', color: 'rgb(var(--ink))' }}
+          title="Zoom Out"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          onClick={resetView}
+          style={{ padding: '0 4px', color: 'rgb(var(--mute))' }}
+          title="Reset Pan & Zoom"
+        >
+          {Math.round(scale * 100)}%
+        </button>
+        <button
+          type="button"
+          onClick={() => setScale((s) => Math.min(2, Number((s + 0.15).toFixed(2))))}
+          style={{ padding: '0 4px', color: 'rgb(var(--ink))' }}
+          title="Zoom In"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+};
 
 function getBoxHeight(c: UmlClassNode): number {
   const fCount = c.fields?.length ?? 0;
@@ -40,11 +157,11 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
     });
 
     const classMap = new Map(classes.map((c) => [c.id, c]));
-    const maxY = classes.reduce((acc, c) => Math.max(acc, c.y + getBoxHeight(c) + 28), 370);
+    const maxY = classes.reduce((acc, c) => Math.max(acc, c.y + getBoxHeight(c) + 20), 340);
 
     return (
-      <div style={{ width: '100%' }}>
-        <svg viewBox={`0 0 760 ${maxY}`} style={{ width: '100%', height: 'auto', maxHeight: '440px', overflow: 'visible' }}>
+      <InteractiveDiagramCanvas>
+        <svg viewBox={`0 0 760 ${maxY}`} style={{ width: '100%', height: 'auto', maxHeight: '340px', overflow: 'visible' }}>
           <defs>
             {/* Open triangle for extends / implements */}
             <marker id="uml-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto">
@@ -121,7 +238,7 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
               <g
                 key={rel.id}
                 style={{
-                  opacity: isRelShown ? 1 : 0.08,
+                  opacity: isRelShown ? 1 : 0.16,
                   transition: 'opacity 300ms ease',
                 }}
               >
@@ -190,7 +307,7 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
               <g
                 key={cls.id}
                 style={{
-                  opacity: cls.isShown ? 1 : 0.16,
+                  opacity: cls.isShown ? 1 : 0.28,
                   transition: 'all 280ms ease',
                 }}
               >
@@ -313,7 +430,7 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
             );
           })}
         </svg>
-      </div>
+      </InteractiveDiagramCanvas>
     );
   }
 
@@ -339,8 +456,8 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
     const activeMsg = activeIndex !== undefined ? allMessages[activeIndex] : undefined;
 
     return (
-      <div style={{ width: '100%' }}>
-        <svg viewBox={`0 0 760 ${totalHeight}`} style={{ width: '100%', height: 'auto', maxHeight: '440px' }}>
+      <InteractiveDiagramCanvas>
+        <svg viewBox={`0 0 760 ${totalHeight}`} style={{ width: '100%', height: 'auto', maxHeight: '360px' }}>
           <defs>
             <marker id="seq-call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
               <polygon points="1,1 9,5 1,9" fill="rgb(var(--sketch))" />
@@ -473,7 +590,7 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
             );
           })}
         </svg>
-      </div>
+      </InteractiveDiagramCanvas>
     );
   }
 
@@ -495,8 +612,8 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
   const maxY = nodes.reduce((acc, n) => Math.max(acc, n.y + 100), 330);
 
   return (
-    <div style={{ width: '100%' }}>
-      <svg viewBox={`0 0 760 ${maxY}`} style={{ width: '100%', height: 'auto', maxHeight: '430px' }}>
+    <InteractiveDiagramCanvas>
+      <svg viewBox={`0 0 760 ${maxY}`} style={{ width: '100%', height: 'auto', maxHeight: '360px' }}>
         <defs>
           <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
             <path d="M 1 1 L 9 5 L 1 9 z" fill="rgb(var(--sketch))" />
@@ -718,6 +835,6 @@ export const SystemDesignVisualizer: React.FC<SystemDesignVisualizerProps> = ({ 
           );
         })}
       </svg>
-    </div>
+    </InteractiveDiagramCanvas>
   );
 };
